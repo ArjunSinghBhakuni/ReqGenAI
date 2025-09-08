@@ -163,6 +163,19 @@ export const actionAPI = {
   // Assign Bitrix24 task
   assignBitrix24Task: (taskId, userId, comment) =>
     api.post(`/actions/bitrix24/assign/${taskId}`, { userId, comment }),
+
+  // Generate HTML view for BRD or Blueprint
+  generateView: (projectId, stage) =>
+    api.post(`/actions/generate-view/${projectId}`, { stage }),
+
+  // Generate PDF from HTML view
+  generatePDFFromHTMLView: (projectId, stage, htmlContent, projectName) =>
+    api.post(`/pdf/generate-from-html-view`, {
+      projectId,
+      stage,
+      htmlContent,
+      projectName,
+    }),
 };
 
 export const infraAPI = {

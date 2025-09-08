@@ -181,6 +181,53 @@ router.get("/download/:filename", (req, res) => {
   }
 });
 
+// Generate PDF from HTML view (uses the beautiful HTML templates)
+router.post("/generate-from-html-view", async (req, res) => {
+  try {
+    const { projectId, stage, htmlContent, projectName } = req.body;
+
+    if (!projectId || !stage || !htmlContent) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: projectId, stage, htmlContent",
+      });
+    }
+
+    if (!["brd", "blueprint"].includes(stage.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: "Stage must be 'brd' or 'blueprint'",
+      });
+    }
+
+    console.log(
+      `Generating PDF from HTML view for project: ${projectId}, stage: ${stage}`
+    );
+
+    // Generate PDF from HTML content
+    const result = await pdfGenerationService.generatePDFFromHTML(htmlContent, {
+      projectId,
+      documentType: stage.toUpperCase(),
+      projectName: projectName || "Document",
+    });
+
+    res.json({
+      success: true,
+      message: "PDF generated successfully from HTML view",
+      filename: result.filename,
+      url: result.url,
+      downloadUrl: `/api/pdf/download/${result.filename}`,
+    });
+  } catch (error) {
+    console.error("Error generating PDF from HTML view:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate PDF from HTML view",
+      error: error.message,
+    });
+  }
+});
+
 // Generate PDF from document (calls n8n and formats as document)
 router.post("/generate-from-document", async (req, res) => {
   try {

@@ -312,6 +312,61 @@ class PDFGenerationService {
     });
   }
 
+  async generatePDFFromHTML(htmlContent, metadata) {
+    return new Promise((resolve, reject) => {
+      try {
+        const puppeteer = require("puppeteer");
+
+        (async () => {
+          try {
+            // Launch browser
+            const browser = await puppeteer.launch({
+              headless: true,
+              args: ["--no-sandbox", "--disable-setuid-sandbox"],
+            });
+
+            const page = await browser.newPage();
+
+            // Set content and wait for it to load
+            await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+            // Generate filename
+            const filename = `${metadata.projectId}_${
+              metadata.documentType
+            }_v${Date.now()}.pdf`;
+            const filepath = path.join(this.outputDir, filename);
+
+            // Generate PDF
+            await page.pdf({
+              path: filepath,
+              format: "A4",
+              printBackground: true,
+              margin: {
+                top: "20mm",
+                right: "20mm",
+                bottom: "20mm",
+                left: "20mm",
+              },
+            });
+
+            await browser.close();
+
+            resolve({
+              success: true,
+              filename,
+              filepath,
+              url: `/pdfs/${filename}`,
+            });
+          } catch (error) {
+            reject(error);
+          }
+        })();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
   parseMarkdownToPDF(markdownContent) {
     // Simple markdown parsing for PDF generation
     let content = markdownContent;

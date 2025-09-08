@@ -941,4 +941,427 @@ const formatAsDocument = (markdownContent, documentType, projectId) => {
   return formattedDocument;
 };
 
+// Generate HTML view for BRD or Blueprint using local templates
+router.post("/generate-view/:projectId", async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { stage } = req.body; // "brd" or "blueprint"
+
+    if (!stage || !["brd", "blueprint"].includes(stage.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: "Stage must be 'brd' or 'blueprint'",
+      });
+    }
+
+    // Find the latest document of the specified type
+    const documentType = stage.toLowerCase() === "brd" ? "BRD" : "BLUEPRINT";
+    const latestDoc = await Document.findOne({
+      project_id: projectId,
+      type: documentType,
+    }).sort({ createdAt: -1 });
+
+    if (!latestDoc) {
+      return res.status(404).json({
+        success: false,
+        message: `No ${documentType} document found for this project`,
+      });
+    }
+
+    // Get project information
+    const project = await Project.findOne({ project_id: projectId });
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    console.log(
+      `Generating ${stage.toUpperCase()} HTML view for project: ${projectId}`
+    );
+
+    // Generate HTML using local template
+    const html = await generateHtmlFromTemplate(
+      stage,
+      latestDoc.content,
+      project,
+      latestDoc
+    );
+
+    res.json({
+      success: true,
+      message: `${stage.toUpperCase()} HTML view generated successfully`,
+      html: html,
+      projectId: projectId,
+      stage: stage,
+    });
+  } catch (error) {
+    console.error("Generate view error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// Helper function to generate HTML from template
+const generateHtmlFromTemplate = async (
+  stage,
+  documentContent,
+  project,
+  document
+) => {
+  const fs = require("fs").promises;
+  const path = require("path");
+
+  try {
+    // Read the appropriate template
+    const templatePath = path.join(
+      __dirname,
+      "..",
+      "html-template",
+      `${stage}.html`
+    );
+    let template = await fs.readFile(templatePath, "utf8");
+
+    // Get current date
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Replace common placeholders
+    template = template.replace(
+      /\{\{projectName\}\}/g,
+      project.name || "Unnamed Project"
+    );
+    template = template.replace(
+      /\{\{projectId\}\}/g,
+      project.project_id || "N/A"
+    );
+    template = template.replace(/\{\{currentDate\}\}/g, currentDate);
+
+    // Add document information
+    template = template.replace(
+      /\{\{documentId\}\}/g,
+      document.documentId || "N/A"
+    );
+    template = template.replace(
+      /\{\{documentVersion\}\}/g,
+      document.version || "1"
+    );
+    template = template.replace(
+      /\{\{documentType\}\}/g,
+      document.type || stage.toUpperCase()
+    );
+
+    if (stage === "brd") {
+      template = await generateBrdHtml(
+        template,
+        documentContent,
+        project,
+        document
+      );
+    } else if (stage === "blueprint") {
+      template = await generateBlueprintHtml(
+        template,
+        documentContent,
+        project,
+        document
+      );
+    }
+
+    return template;
+  } catch (error) {
+    console.error("Error generating HTML from template:", error);
+    throw error;
+  }
+};
+
+// Generate BRD HTML content
+const generateBrdHtml = async (template, content, project, document) => {
+  try {
+    // Extract data from document content - handle both old and new structure
+    const brdData = content.brd || content;
+    const projectInfo = brdData.project_info || {};
+    const requirements = brdData.requirements || {};
+    const constraints = brdData.constraints || [];
+
+    // Project description
+    const projectDescription =
+      projectInfo.description ||
+      project.description ||
+      "Project description to be provided.";
+    template = template.replace(
+      /\{\{projectDescription\}\}/g,
+      projectDescription
+    );
+
+    // Business objectives
+    const businessObjectives = projectInfo.business_objectives || [];
+    const businessObjectivesHtml =
+      businessObjectives.length > 0
+        ? `<ol>${businessObjectives
+            .map((obj) => `<li>${obj}</li>`)
+            .join("")}</ol>`
+        : "<p><em>Business objectives to be provided.</em></p>";
+    template = template.replace(
+      /\{\{businessObjectives\}\}/g,
+      businessObjectivesHtml
+    );
+
+    // Success metrics
+    const successMetrics = projectInfo.success_metrics || [];
+    const successMetricsHtml =
+      successMetrics.length > 0
+        ? `<ol>${successMetrics
+            .map((metric) => `<li>${metric}</li>`)
+            .join("")}</ol>`
+        : "<p><em>Success metrics to be provided.</em></p>";
+    template = template.replace(/\{\{successMetrics\}\}/g, successMetricsHtml);
+
+    // Stakeholders
+    const stakeholders = projectInfo.stakeholders || [];
+    const stakeholdersHtml =
+      stakeholders.length > 0
+        ? stakeholders
+            .map(
+              (stakeholder) =>
+                `<tr>
+            <td>${stakeholder.role || "N/A"}</td>
+            <td>${stakeholder.contact || "N/A"}</td>
+            <td>${stakeholder.responsibilities || "To be defined"}</td>
+          </tr>`
+            )
+            .join("")
+        : '<tr><td colspan="3"><em>Stakeholder information to be provided.</em></td></tr>';
+    template = template.replace(/\{\{stakeholdersTable\}\}/g, stakeholdersHtml);
+
+    // Functional requirements
+    const functionalReqs = requirements.functional || [];
+    const functionalReqsHtml =
+      functionalReqs.length > 0
+        ? `<ol>${functionalReqs.map((req) => `<li>${req}</li>`).join("")}</ol>`
+        : "<p><em>Functional requirements to be provided.</em></p>";
+    template = template.replace(
+      /\{\{functionalRequirements\}\}/g,
+      functionalReqsHtml
+    );
+
+    // Non-functional requirements
+    const nonFunctionalReqs = requirements.non_functional || [];
+    const nonFunctionalReqsHtml =
+      nonFunctionalReqs.length > 0
+        ? `<ol>${nonFunctionalReqs
+            .map((req) => `<li>${req}</li>`)
+            .join("")}</ol>`
+        : "<p><em>Non-functional requirements to be provided.</em></p>";
+    template = template.replace(
+      /\{\{nonFunctionalRequirements\}\}/g,
+      nonFunctionalReqsHtml
+    );
+
+    // Constraints
+    const constraintsHtml =
+      constraints.length > 0
+        ? `<ul>${constraints
+            .map((constraint) => `<li>${constraint}</li>`)
+            .join("")}</ul>`
+        : "<p><em>Project constraints to be provided.</em></p>";
+    template = template.replace(/\{\{constraintsList\}\}/g, constraintsHtml);
+
+    return template;
+  } catch (error) {
+    console.error("Error generating BRD HTML:", error);
+    throw error;
+  }
+};
+
+// Generate Blueprint HTML content
+const generateBlueprintHtml = async (template, content, project, document) => {
+  try {
+    // Extract data from document content - handle both old and new structure
+    const blueprintData = content.blueprint || content;
+    const projectOverview = blueprintData.project_overview || {};
+    const featureBreakdown = blueprintData.feature_breakdown || [];
+    const techArch = blueprintData.technical_architecture || {};
+    const userFlow = blueprintData.user_experience_flow || {};
+    const timeline = blueprintData.timeline_milestones || [];
+    const resources = blueprintData.resource_requirements || [];
+    const risks = blueprintData.risk_assessment || [];
+    const assumptions = blueprintData.assumptions || [];
+    const nextSteps = blueprintData.next_steps || [];
+
+    // Project goals
+    const goals = projectOverview.goals || [];
+    const goalsHtml =
+      goals.length > 0
+        ? `<ul>${goals.map((goal) => `<li>${goal}</li>`).join("")}</ul>`
+        : "<p><em>Project goals to be provided.</em></p>";
+    template = template.replace(/\{\{projectGoals\}\}/g, goalsHtml);
+
+    // Target audience
+    const audience = projectOverview.target_audience || [];
+    const audienceHtml =
+      audience.length > 0
+        ? `<ul>${audience.map((aud) => `<li>${aud}</li>`).join("")}</ul>`
+        : "<p><em>Target audience to be provided.</em></p>";
+    template = template.replace(/\{\{targetAudience\}\}/g, audienceHtml);
+
+    // Success metrics
+    const metrics = projectOverview.success_metrics || [];
+    const metricsHtml =
+      metrics.length > 0
+        ? `<ul>${metrics.map((metric) => `<li>${metric}</li>`).join("")}</ul>`
+        : "<p><em>Success metrics to be provided.</em></p>";
+    template = template.replace(/\{\{successMetrics\}\}/g, metricsHtml);
+
+    // Feature breakdown
+    const featuresHtml =
+      featureBreakdown.length > 0
+        ? featureBreakdown
+            .map((feature) => {
+              const priority = feature.priority || "Medium";
+              const priorityClass =
+                priority.toLowerCase() === "high"
+                  ? "priority-high"
+                  : priority.toLowerCase() === "low"
+                  ? "priority-low"
+                  : "priority-medium";
+              return `<tr>
+            <td>${feature.feature || "N/A"}</td>
+            <td><span class="${priorityClass}">${priority}</span></td>
+            <td>${(feature.dependencies || []).join(", ") || "None"}</td>
+            <td>${
+              feature.description || "Feature description to be provided"
+            }</td>
+          </tr>`;
+            })
+            .join("")
+        : '<tr><td colspan="4"><em>Feature breakdown to be provided.</em></td></tr>';
+    template = template.replace(/\{\{featureBreakdown\}\}/g, featuresHtml);
+
+    // Tech stack
+    const techStack = techArch.recommended_stack || [];
+    const techStackHtml =
+      techStack.length > 0
+        ? techStack
+            .map(
+              (tech) => `<div class="tech-card">
+          <h4>${tech.layer || "Technology"}</h4>
+          <p>${tech.technology || tech}</p>
+        </div>`
+            )
+            .join("")
+        : '<div class="tech-card"><h4>Technology Stack</h4><p><em>Technology stack to be provided.</em></p></div>';
+    template = template.replace(/\{\{techStack\}\}/g, techStackHtml);
+
+    // Architecture justification
+    const justification =
+      techArch.justification || "Architecture justification to be provided.";
+    template = template.replace(
+      /\{\{architectureJustification\}\}/g,
+      justification
+    );
+
+    // User journeys
+    const journeys = userFlow.journeys || [];
+    const journeysHtml =
+      journeys.length > 0
+        ? `<ol>${journeys
+            .map((journey) => `<li>${journey}</li>`)
+            .join("")}</ol>`
+        : "<p><em>User journeys to be provided.</em></p>";
+    template = template.replace(/\{\{userJourneys\}\}/g, journeysHtml);
+
+    // Key interactions
+    const interactions = userFlow.key_interactions || [];
+    const interactionsHtml =
+      interactions.length > 0
+        ? `<ul>${interactions
+            .map((interaction) => `<li>${interaction}</li>`)
+            .join("")}</ul>`
+        : "<p><em>Key interactions to be provided.</em></p>";
+    template = template.replace(/\{\{keyInteractions\}\}/g, interactionsHtml);
+
+    // Timeline milestones
+    const timelineHtml =
+      timeline.length > 0
+        ? timeline
+            .map(
+              (milestone, index) => `<div class="timeline-item">
+          <div class="timeline-marker">${index + 1}</div>
+          <div class="timeline-content">
+            <h4>${milestone.phase || "Phase " + (index + 1)}</h4>
+            <ul>${(milestone.deliverables || [])
+              .map((del) => `<li>${del}</li>`)
+              .join("")}</ul>
+            <div class="estimate">Estimated Duration: ${
+              milestone.estimate || "To be determined"
+            }</div>
+          </div>
+        </div>`
+            )
+            .join("")
+        : '<div class="timeline-item"><div class="timeline-marker">1</div><div class="timeline-content"><h4>Project Timeline</h4><p><em>Timeline and milestones to be provided.</em></p></div></div>';
+    template = template.replace(/\{\{timelineMilestones\}\}/g, timelineHtml);
+
+    // Resource requirements
+    const resourcesHtml =
+      resources.length > 0
+        ? resources
+            .map(
+              (resource) => `<tr>
+          <td>${resource.role || "N/A"}</td>
+          <td>${resource.responsibilities || "To be defined"}</td>
+          <td>${resource.skills || "To be defined"}</td>
+          <td>${resource.duration || "To be determined"}</td>
+        </tr>`
+            )
+            .join("")
+        : '<tr><td colspan="4"><em>Resource requirements to be provided.</em></td></tr>';
+    template = template.replace(/\{\{resourceRequirements\}\}/g, resourcesHtml);
+
+    // Risk assessment
+    const risksHtml =
+      risks.length > 0
+        ? risks
+            .map(
+              (risk) => `<div class="risk-item">
+          <h4>${risk.risk || "Risk"}</h4>
+          <p><strong>Mitigation:</strong> ${
+            risk.mitigation || "Mitigation strategy to be provided"
+          }</p>
+        </div>`
+            )
+            .join("")
+        : '<div class="risk-item"><h4>Risk Assessment</h4><p><em>Risk assessment to be provided.</em></p></div>';
+    template = template.replace(/\{\{riskAssessment\}\}/g, risksHtml);
+
+    // Project assumptions
+    const assumptionsHtml =
+      assumptions.length > 0
+        ? `<ul>${assumptions
+            .map((assumption) => `<li>${assumption}</li>`)
+            .join("")}</ul>`
+        : "<p><em>Project assumptions to be provided.</em></p>";
+    template = template.replace(/\{\{projectAssumptions\}\}/g, assumptionsHtml);
+
+    // Next steps
+    const nextStepsHtml =
+      nextSteps.length > 0
+        ? `<ol>${nextSteps.map((step) => `<li>${step}</li>`).join("")}</ol>`
+        : "<p><em>Next steps to be provided.</em></p>";
+    template = template.replace(/\{\{nextSteps\}\}/g, nextStepsHtml);
+
+    return template;
+  } catch (error) {
+    console.error("Error generating Blueprint HTML:", error);
+    throw error;
+  }
+};
+
 module.exports = router;

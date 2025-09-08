@@ -24,18 +24,34 @@ class Bitrix24IntegrationService {
         projectName = projectInfo.project_name;
       } else if (projectInfo.goals && projectInfo.goals.length > 0) {
         // Use the first goal as project name, but limit length
-        projectName = projectInfo.goals[0].substring(0, 100);
+        projectName = projectInfo.goals[0].substring(0, 50);
       } else if (projectInfo.description) {
-        projectName = projectInfo.description.substring(0, 100);
+        projectName = projectInfo.description.substring(0, 50);
       }
+
+      // Clean up project name - remove special characters and limit length
+      projectName = projectName
+        .replace(/[^\w\s-]/g, "") // Remove special characters except spaces and hyphens
+        .substring(0, 50) // Limit to 50 characters
+        .trim();
+
+      if (!projectName || projectName.length === 0) {
+        projectName = "Stock Market Application Project";
+      }
+
+      const description = this.formatBlueprintDescription(blueprintData);
 
       const projectData = {
         NAME: projectName,
-        DESCRIPTION: this.formatBlueprintDescription(blueprintData),
+        DESCRIPTION: description.substring(0, 1000), // Limit description length
         PROJECT: "Y",
       };
 
       console.log("Creating Bitrix24 project:", projectData);
+      console.log(
+        "Using webhook URL:",
+        `${this.projectWebhookUrl}sonet_group.create.json`
+      );
 
       const response = await axios.post(
         `${this.projectWebhookUrl}sonet_group.create.json`,
@@ -47,6 +63,8 @@ class Bitrix24IntegrationService {
           timeout: 10000,
         }
       );
+
+      console.log("Bitrix24 response:", response.data);
 
       if (response.data.result) {
         console.log("Bitrix24 project created:", response.data.result);
@@ -63,10 +81,14 @@ class Bitrix24IntegrationService {
       }
     } catch (error) {
       console.error("Bitrix24 project creation failed:", error.message);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error headers:", error.response?.headers);
       return {
         success: false,
         error: error.message,
         details: error.response?.data || error.message,
+        status: error.response?.status,
       };
     }
   }
@@ -83,6 +105,13 @@ class Bitrix24IntegrationService {
 
       // Create main tasks for each feature
       for (const feature of featureBreakdown) {
+        // Handle dependencies - convert string to array if needed
+        const dependencies = Array.isArray(feature.dependencies)
+          ? feature.dependencies
+          : feature.dependencies
+          ? [feature.dependencies]
+          : [];
+
         const taskData = {
           fields: {
             TITLE: feature.feature,
@@ -124,7 +153,7 @@ class Bitrix24IntegrationService {
             taskId: taskId,
             priority: feature.priority,
             type: "Feature",
-            dependencies: feature.dependencies,
+            dependencies: dependencies,
           });
 
           // Store feature task for subtask creation
@@ -186,11 +215,18 @@ class Bitrix24IntegrationService {
           );
 
           // Create subtasks for each deliverable in the milestone
-          const deliverables = Array.isArray(milestone.deliverables)
-            ? milestone.deliverables
-            : milestone.deliverables
-            ? [milestone.deliverables]
-            : [];
+          let deliverables = [];
+          if (Array.isArray(milestone.deliverables)) {
+            deliverables = milestone.deliverables;
+          } else if (typeof milestone.deliverables === "string") {
+            // Split string by common delimiters and clean up
+            deliverables = milestone.deliverables
+              .split(/[,;]\s*/)
+              .map((d) => d.trim())
+              .filter((d) => d.length > 0);
+          } else if (milestone.deliverables) {
+            deliverables = [milestone.deliverables];
+          }
 
           for (const deliverable of deliverables) {
             const subtaskData = {

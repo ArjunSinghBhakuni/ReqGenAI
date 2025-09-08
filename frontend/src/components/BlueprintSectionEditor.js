@@ -7,6 +7,7 @@ const BlueprintSectionEditor = ({
   documentType,
   onSave,
   onConvert,
+  project, // Add project prop to access main project data
 }) => {
   const [sections, setSections] = useState({});
   const [editingSection, setEditingSection] = useState(null);
@@ -258,7 +259,23 @@ const BlueprintSectionEditor = ({
 
   const startEditing = (sectionName, sectionData) => {
     setEditingSection(sectionName);
-    setEditData({ ...sectionData });
+
+    // For Project Overview, merge with project data if available
+    if (sectionName === "Project Overview" && project) {
+      const mergedData = {
+        ...sectionData,
+        project_overview: {
+          ...sectionData.project_overview,
+          project_name:
+            sectionData.project_overview?.project_name || project.name,
+          description:
+            sectionData.project_overview?.description || project.description,
+        },
+      };
+      setEditData(mergedData);
+    } else {
+      setEditData({ ...sectionData });
+    }
   };
 
   const cancelEditing = () => {
@@ -886,7 +903,9 @@ const BlueprintSectionEditor = ({
               </label>
               <input
                 type="text"
-                value={editData.project_overview?.project_name || ""}
+                value={
+                  editData.project_overview?.project_name || project?.name || ""
+                }
                 onChange={(e) =>
                   setEditData((prev) => ({
                     ...prev,
@@ -905,7 +924,11 @@ const BlueprintSectionEditor = ({
                 Description
               </label>
               <textarea
-                value={editData.project_overview?.description || ""}
+                value={
+                  editData.project_overview?.description ||
+                  project?.description ||
+                  ""
+                }
                 onChange={(e) =>
                   setEditData((prev) => ({
                     ...prev,
@@ -1308,13 +1331,17 @@ const BlueprintSectionEditor = ({
             <div>
               <h5 className="font-medium text-gray-900">Project Name</h5>
               <p className="text-gray-700">
-                {sectionData.project_overview?.project_name || "Not specified"}
+                {sectionData.project_overview?.project_name ||
+                  project?.name ||
+                  "Not specified"}
               </p>
             </div>
             <div>
               <h5 className="font-medium text-gray-900">Description</h5>
               <p className="text-gray-700">
-                {sectionData.project_overview?.description || "Not specified"}
+                {sectionData.project_overview?.description ||
+                  project?.description ||
+                  "Not specified"}
               </p>
             </div>
             <div>

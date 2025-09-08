@@ -32,6 +32,19 @@ const ProjectDetail = () => {
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Loading states for action buttons
+  const [loadingRequirements, setLoadingRequirements] = useState(false);
+  const [loadingBRD, setLoadingBRD] = useState(false);
+  const [loadingBlueprint, setLoadingBlueprint] = useState(false);
+  const [loadingBitrix24, setLoadingBitrix24] = useState(false);
+  const [loadingPDF, setLoadingPDF] = useState(false);
+  const [loadingGenerateView, setLoadingGenerateView] = useState(false);
+
+  // HTML view modal states
+  const [showHtmlView, setShowHtmlView] = useState(false);
+  const [htmlContent, setHtmlContent] = useState("");
+  const [currentViewStage, setCurrentViewStage] = useState("");
+
   useEffect(() => {
     if (project_id) {
       loadProjectDetails(project_id);
@@ -318,6 +331,22 @@ const ProjectDetail = () => {
 
   // Generate next step
   const generateNextStep = async (stepType, data) => {
+    // Set loading state based on step type
+    switch (stepType.toLowerCase()) {
+      case "requirements":
+        setLoadingRequirements(true);
+        break;
+      case "brd":
+        setLoadingBRD(true);
+        break;
+      case "blueprint":
+        setLoadingBlueprint(true);
+        break;
+      case "implementation":
+        setLoadingBitrix24(true);
+        break;
+    }
+
     try {
       toast.info({
         title: "Generating Next Step",
@@ -348,10 +377,8 @@ const ProjectDetail = () => {
           description: `${stepType} generation has been initiated. You'll be notified when it's complete.`,
         });
 
-        // Refresh project data to show updated status
-        setTimeout(() => {
-          refreshProjectData();
-        }, 1000); // Wait 1 second then refresh
+        // Refresh project data immediately to show updated status
+        await refreshProjectData();
       }
     } catch (error) {
       console.error("Generation error:", error);
@@ -360,6 +387,57 @@ const ProjectDetail = () => {
         description:
           error.response?.data?.message || "Failed to start generation.",
       });
+    } finally {
+      // Clear loading state
+      switch (stepType.toLowerCase()) {
+        case "requirements":
+          setLoadingRequirements(false);
+          break;
+        case "brd":
+          setLoadingBRD(false);
+          break;
+        case "blueprint":
+          setLoadingBlueprint(false);
+          break;
+        case "implementation":
+          setLoadingBitrix24(false);
+          break;
+      }
+    }
+  };
+
+  // Generate HTML view for BRD or Blueprint
+  const generateView = async (stage) => {
+    setLoadingGenerateView(true);
+    try {
+      toast.info({
+        title: "Generating View",
+        description: `Creating HTML view for ${stage.toUpperCase()}...`,
+      });
+
+      const response = await actionAPI.generateView(project_id, stage);
+
+      if (response.data.success) {
+        setHtmlContent(response.data.html);
+        setCurrentViewStage(stage);
+        setShowHtmlView(true);
+
+        toast.success({
+          title: "View Generated",
+          description: `${stage.toUpperCase()} HTML view has been generated successfully!`,
+        });
+      } else {
+        throw new Error(response.data.message || "Failed to generate view");
+      }
+    } catch (error) {
+      console.error("Generate view error:", error);
+      toast.error({
+        title: "Generation Failed",
+        description:
+          error.response?.data?.message || "Failed to generate HTML view.",
+      });
+    } finally {
+      setLoadingGenerateView(false);
     }
   };
 
@@ -423,6 +501,7 @@ const ProjectDetail = () => {
 
   // Generate PDF for document
   const generatePDF = async (document) => {
+    setLoadingPDF(true);
     try {
       toast.info({
         title: "Generating PDF",
@@ -458,6 +537,8 @@ const ProjectDetail = () => {
           error.response?.data?.message ||
           "Failed to generate PDF. Please try again.",
       });
+    } finally {
+      setLoadingPDF(false);
     }
   };
 
@@ -728,22 +809,54 @@ const ProjectDetail = () => {
                   onClick={() =>
                     generateNextStep("requirements", { input: project?.input })
                   }
-                  className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100"
+                  disabled={loadingRequirements}
+                  className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
+                    loadingRequirements
+                      ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                      : "text-green-600 bg-green-50 hover:bg-green-100"
+                  }`}
                 >
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  Extract Requirements
+                  {loadingRequirements ? (
+                    <>
+                      <svg
+                        className="animate-spin w-4 h-4 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Extracting...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      Extract Requirements
+                    </>
+                  )}
                 </button>
               </>
             ) : (
@@ -1112,22 +1225,54 @@ const ProjectDetail = () => {
                         input: project?.input,
                       })
                     }
-                    className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100"
+                    disabled={loadingRequirements}
+                    className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
+                      loadingRequirements
+                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                        : "text-green-600 bg-green-50 hover:bg-green-100"
+                    }`}
                   >
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    Extract Requirements
+                    {loadingRequirements ? (
+                      <>
+                        <svg
+                          className="animate-spin w-4 h-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Extracting...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        Extract Requirements
+                      </>
+                    )}
                   </button>
                 </>
               ) : (
@@ -1364,84 +1509,151 @@ const ProjectDetail = () => {
               documentType === "BLUEPRINT") && (
               <>
                 {docs.length > 0 ? (
-                  <button
-                    onClick={(e) => {
-                      console.log("Button clicked!", {
-                        documentType,
-                        latestDoc,
-                      });
-                      e.preventDefault();
-                      handleViewAndDownloadDocument(latestDoc, documentType);
-                    }}
-                    disabled={loadingMarkdown}
-                    className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                      loadingMarkdown
-                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                        : "text-blue-600 bg-blue-50 hover:bg-blue-100"
-                    }`}
-                  >
-                    {loadingMarkdown ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-400"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
+                  // Show Generate View button for BRD and BLUEPRINT, View & PDF Download for REQUIREMENTS
+                  documentType === "BRD" || documentType === "BLUEPRINT" ? (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const stage =
+                          documentType === "BRD" ? "brd" : "blueprint";
+                        generateView(stage);
+                      }}
+                      disabled={loadingGenerateView}
+                      className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        loadingGenerateView
+                          ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                          : "text-purple-600 bg-purple-50 hover:bg-purple-100"
+                      }`}
+                    >
+                      {loadingGenerateView ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-400"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Generating View...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4 mr-2"
+                            fill="none"
                             stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Generating Document...
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        View & PDF Download
-                      </>
-                    )}
-                  </button>
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                          </svg>
+                          Generate View
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        console.log("Button clicked!", {
+                          documentType,
+                          latestDoc,
+                        });
+                        e.preventDefault();
+                        handleViewAndDownloadDocument(latestDoc, documentType);
+                      }}
+                      disabled={loadingMarkdown}
+                      className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        loadingMarkdown
+                          ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                          : "text-blue-600 bg-blue-50 hover:bg-blue-100"
+                      }`}
+                    >
+                      {loadingMarkdown ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-400"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Generating Document...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                          </svg>
+                          <svg
+                            className="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          View & PDF Download
+                        </>
+                      )}
+                    </button>
+                  )
                 ) : (
                   <button
                     disabled={true}
@@ -1489,22 +1701,66 @@ const ProjectDetail = () => {
                         content: latestDoc?.content,
                       })
                     }
-                    className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100"
+                    disabled={
+                      (nextStepType === "BRD" && loadingBRD) ||
+                      (nextStepType === "Blueprint" && loadingBlueprint) ||
+                      (nextStepType === "Implementation" && loadingBitrix24)
+                    }
+                    className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
+                      (nextStepType === "BRD" && loadingBRD) ||
+                      (nextStepType === "Blueprint" && loadingBlueprint) ||
+                      (nextStepType === "Implementation" && loadingBitrix24)
+                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                        : "text-green-600 bg-green-50 hover:bg-green-100"
+                    }`}
                   >
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    Generate {nextStepType}
+                    {(nextStepType === "BRD" && loadingBRD) ||
+                    (nextStepType === "Blueprint" && loadingBlueprint) ||
+                    (nextStepType === "Implementation" && loadingBitrix24) ? (
+                      <>
+                        <svg
+                          className="animate-spin w-4 h-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        {nextStepType === "BRD" && "Generating BRD..."}
+                        {nextStepType === "Blueprint" &&
+                          "Generating Blueprint..."}
+                        {nextStepType === "Implementation" &&
+                          "Creating Bitrix24..."}
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        Generate {nextStepType}
+                      </>
+                    )}
                   </button>
                 )}
               </>
@@ -1562,6 +1818,7 @@ const ProjectDetail = () => {
                         documentType={documentType}
                         onSave={handleJsonSectionSave}
                         onConvert={handleMarkdownConversion}
+                        project={project}
                       />
                     );
                   } else {
@@ -1672,9 +1929,14 @@ const ProjectDetail = () => {
                           </button>
                           <button
                             onClick={() => generatePDF(doc)}
-                            className="text-red-600 hover:text-red-900"
+                            disabled={loadingPDF}
+                            className={`${
+                              loadingPDF
+                                ? "text-gray-400 cursor-not-allowed"
+                                : "text-red-600 hover:text-red-900"
+                            }`}
                           >
-                            PDF
+                            {loadingPDF ? "Generating..." : "PDF"}
                           </button>
                         </div>
                       </td>
@@ -2162,6 +2424,161 @@ const ProjectDetail = () => {
                     setDocumentContent(null);
                   }}
                   className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HTML View Modal */}
+      {showHtmlView && htmlContent && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div
+              className="fixed inset-0 transition-opacity"
+              aria-hidden="true"
+            >
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span
+              className="hidden sm:inline-block sm:align-middle sm:h-screen"
+              aria-hidden="true"
+            >
+              &#8203;
+            </span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {currentViewStage.toUpperCase()} HTML View
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={async () => {
+                        // Generate PDF from the current HTML view
+                        setLoadingPDF(true);
+                        try {
+                          const response =
+                            await actionAPI.generatePDFFromHTMLView(
+                              project_id,
+                              currentViewStage,
+                              htmlContent,
+                              project?.name || "Document"
+                            );
+
+                          if (response.data.success) {
+                            // Download the PDF
+                            const link = document.createElement("a");
+                            link.href = `http://localhost:8080${response.data.downloadUrl}`;
+                            link.download = response.data.filename;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+
+                            toast.success({
+                              title: "PDF Downloaded",
+                              message:
+                                "PDF generated successfully from HTML view",
+                            });
+                          }
+                        } catch (error) {
+                          console.error("PDF generation error:", error);
+                          toast.error({
+                            title: "PDF Generation Failed",
+                            message:
+                              error.response?.data?.message ||
+                              "Failed to generate PDF",
+                          });
+                        } finally {
+                          setLoadingPDF(false);
+                        }
+                      }}
+                      disabled={loadingPDF}
+                      className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
+                        loadingPDF
+                          ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                          : "text-red-600 bg-red-50 hover:bg-red-100"
+                      }`}
+                    >
+                      {loadingPDF ? (
+                        <>
+                          <svg
+                            className="animate-spin w-4 h-4 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4 mr-1"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          Download PDF
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowHtmlView(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-md p-4">
+                  <div
+                    className="prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: htmlContent }}
+                  />
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={() => setShowHtmlView(false)}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Close
                 </button>

@@ -29,6 +29,7 @@
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
     "pdfkit": "^0.17.2",
+    "puppeteer": "^24.19.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
