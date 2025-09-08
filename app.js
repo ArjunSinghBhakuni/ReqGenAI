@@ -55,8 +55,8 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 const connectDB = async () => {
   try {
     const mongoUri = process.env.MONGODB_URI;
-    
-    if (!mongoUri || typeof mongoUri !== 'string' || mongoUri.trim() === '') {
+
+    if (!mongoUri || typeof mongoUri !== "string" || mongoUri.trim() === "") {
       console.error("MONGODB_URI environment variable is not set or invalid");
       console.log("App will run without database connection");
       return;
@@ -80,7 +80,7 @@ const connectDB = async () => {
 
 // Connect to database (only if URI is available and valid)
 const mongoUri = process.env.MONGODB_URI;
-if (mongoUri && typeof mongoUri === 'string' && mongoUri.trim() !== '') {
+if (mongoUri && typeof mongoUri === "string" && mongoUri.trim() !== "") {
   console.log("MongoDB URI found, attempting connection...");
   connectDB();
 } else {
