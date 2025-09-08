@@ -71,6 +71,12 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api", requirementRoutes);
 app.use("/api/pdf", pdfRoutes); // PDF generation routes
 
+// Serve static files from React build in production
+if (process.env.NODE_ENV === "production") {
+  const path = require("path");
+  app.use(express.static(path.join(__dirname, "frontend/build")));
+}
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -102,14 +108,22 @@ app.get("/", (req, res) => {
   });
 });
 
-// 404 handler
-app.use("*", (req, res) => {
-  res.status(404).json({
-    error: "Route not found",
-    path: req.originalUrl,
-    method: req.method,
+// Serve React app for all non-API routes in production
+if (process.env.NODE_ENV === "production") {
+  app.get("*", (req, res) => {
+    const path = require("path");
+    res.sendFile(path.join(__dirname, "frontend/build", "index.html"));
   });
-});
+} else {
+  // 404 handler for development
+  app.use("*", (req, res) => {
+    res.status(404).json({
+      error: "Route not found",
+      path: req.originalUrl,
+      method: req.method,
+    });
+  });
+}
 
 // Error handling middleware
 app.use(logError);
