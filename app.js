@@ -50,11 +50,22 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // MongoDB connection
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    if (!process.env.MONGODB_URI) {
+      console.error("MONGODB_URI environment variable is not set");
+      return;
+    }
+
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error("MongoDB connection error:", error);
-    process.exit(1);
+    // Don't exit process in serverless environment
+    if (process.env.NODE_ENV !== "production") {
+      process.exit(1);
+    }
   }
 };
 
@@ -129,10 +140,42 @@ if (process.env.NODE_ENV === "production") {
 app.use(logError);
 app.use((err, req, res, next) => {
   console.error("Error:", err);
+
+  // Handle specific error types
+  if (err.name === "ValidationError") {
+    return res.status(400).json({
+      error: "Validation Error",
+      details: err.message,
+    });
+  }
+
+  if (err.name === "CastError") {
+    return res.status(400).json({
+      error: "Invalid ID format",
+    });
+  }
+
+  if (err.code === 11000) {
+    return res.status(400).json({
+      error: "Duplicate field value",
+    });
+  }
+
   res.status(err.status || 500).json({
     error: err.message || "Internal Server Error",
     ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  // Don't exit in serverless environment
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  // Don't exit in serverless environment
 });
 
 // Start server
