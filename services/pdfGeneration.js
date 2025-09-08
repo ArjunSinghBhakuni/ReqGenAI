@@ -4,13 +4,24 @@ const path = require("path");
 
 class PDFGenerationService {
   constructor() {
-    this.outputDir = path.join(__dirname, "../public/pdfs");
+    // Use /tmp directory for Vercel serverless environment
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+      this.outputDir = '/tmp/pdfs';
+    } else {
+      this.outputDir = path.join(__dirname, "../public/pdfs");
+    }
     this.ensureOutputDir();
   }
 
   ensureOutputDir() {
-    if (!fs.existsSync(this.outputDir)) {
-      fs.mkdirSync(this.outputDir, { recursive: true });
+    try {
+      if (!fs.existsSync(this.outputDir)) {
+        fs.mkdirSync(this.outputDir, { recursive: true });
+      }
+    } catch (error) {
+      console.warn('Could not create PDF output directory:', error.message);
+      // Fallback to /tmp if the original directory creation fails
+      this.outputDir = '/tmp';
     }
   }
 

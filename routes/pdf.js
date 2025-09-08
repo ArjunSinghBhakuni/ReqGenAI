@@ -153,7 +153,16 @@ router.post("/generate-from-markdown", async (req, res) => {
 router.get("/download/:filename", (req, res) => {
   try {
     const { filename } = req.params;
-    const filepath = path.join(__dirname, "../public/pdfs", filename);
+    
+    // Use same directory logic as PDFGenerationService
+    let pdfDir;
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+      pdfDir = '/tmp/pdfs';
+    } else {
+      pdfDir = path.join(__dirname, "../public/pdfs");
+    }
+    
+    const filepath = path.join(pdfDir, filename);
 
     // Check if file exists
     const fs = require("fs");
