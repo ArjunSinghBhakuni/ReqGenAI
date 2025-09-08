@@ -242,6 +242,9 @@ const ProjectDetail = () => {
         case "blueprint":
           response = await actionAPI.generateBlueprint(project_id, data);
           break;
+        case "implementation":
+          response = await actionAPI.createBitrix24Project(project_id, data);
+          break;
         default:
           throw new Error(`Unknown step type: ${stepType}`);
       }

@@ -8,13 +8,26 @@ class Bitrix24IntegrationService {
     this.webhookUrl =
       process.env.BITRIX24_WEBHOOK_URL ||
       "https://b24-kb0ki5.bitrix24.in/rest/1/3jg6d1as4kwbc9vc/";
+    this.projectWebhookUrl =
+      process.env.BITRIX24_PROJECT_WEBHOOK_URL ||
+      "https://b24-kb0ki5.bitrix24.in/rest/1/jbej2i8xtuzcjndz/";
   }
 
   // Create a project in Bitrix24 using sonet_group.create
   async createProject(blueprintData) {
     try {
       const projectInfo = blueprintData.blueprint.project_overview;
-      const projectName = projectInfo.goals[0] || "New Project";
+      // Try to get project name from different sources
+      let projectName = "New Project";
+
+      if (projectInfo.project_name) {
+        projectName = projectInfo.project_name;
+      } else if (projectInfo.goals && projectInfo.goals.length > 0) {
+        // Use the first goal as project name, but limit length
+        projectName = projectInfo.goals[0].substring(0, 100);
+      } else if (projectInfo.description) {
+        projectName = projectInfo.description.substring(0, 100);
+      }
 
       const projectData = {
         NAME: projectName,
@@ -25,7 +38,7 @@ class Bitrix24IntegrationService {
       console.log("Creating Bitrix24 project:", projectData);
 
       const response = await axios.post(
-        `${this.webhookUrl}sonet_group.create.json`,
+        `${this.projectWebhookUrl}sonet_group.create.json`,
         projectData,
         {
           headers: {
@@ -58,7 +71,7 @@ class Bitrix24IntegrationService {
     }
   }
 
-  // Create tasks from blueprint with timeline
+  // Create tasks from blueprint with timeline and subtasks
   async createTasksFromBlueprint(groupId, blueprintData) {
     try {
       const featureBreakdown = blueprintData.blueprint.feature_breakdown;
@@ -66,8 +79,9 @@ class Bitrix24IntegrationService {
       const resourceRequirements =
         blueprintData.blueprint.resource_requirements;
       const createdTasks = [];
+      const featureTaskMap = new Map(); // Map to store feature tasks for subtask creation
 
-      // Create tasks for each feature
+      // Create main tasks for each feature
       for (const feature of featureBreakdown) {
         const taskData = {
           fields: {
@@ -79,16 +93,18 @@ class Bitrix24IntegrationService {
               resourceRequirements
             ),
             PRIORITY: this.mapPriority(feature.priority),
-            STATUS: "2", // In progress
+            STATUS: "1", // New
             TAGS: ["Feature", feature.priority],
             DEADLINE: this.calculateFeatureDeadline(
               feature,
               timelineMilestones
             ),
+            CREATED_BY: 1, // System user
+            CHANGED_BY: 1, // System user
           },
         };
 
-        console.log(`Creating task for feature: ${feature.feature}`);
+        console.log(`Creating main task for feature: ${feature.feature}`);
 
         const response = await axios.post(
           `${this.webhookUrl}tasks.task.add.json`,
@@ -102,16 +118,29 @@ class Bitrix24IntegrationService {
         );
 
         if (response.data.result) {
+          const taskId = response.data.result.task.id;
           createdTasks.push({
             feature: feature.feature,
-            taskId: response.data.result.task.id,
+            taskId: taskId,
             priority: feature.priority,
             type: "Feature",
+            dependencies: feature.dependencies,
           });
+
+          // Store feature task for subtask creation
+          featureTaskMap.set(feature.feature, taskId);
+          console.log(
+            `✅ Created task for feature: ${feature.feature} with ID: ${taskId}`
+          );
+        } else {
+          console.error(
+            `❌ Failed to create task for feature: ${feature.feature}`,
+            response.data
+          );
         }
       }
 
-      // Create milestone tasks
+      // Create milestone tasks and their subtasks
       for (const milestone of timelineMilestones) {
         const milestoneData = {
           fields: {
@@ -126,12 +155,14 @@ class Bitrix24IntegrationService {
             STATUS: "1", // New
             TAGS: ["Milestone", milestone.phase],
             DEADLINE: this.calculateMilestoneDeadline(milestone),
+            CREATED_BY: 1,
+            CHANGED_BY: 1,
           },
         };
 
         console.log(`Creating milestone task: ${milestone.phase}`);
 
-        const response = await axios.post(
+        const milestoneResponse = await axios.post(
           `${this.webhookUrl}tasks.task.add.json`,
           milestoneData,
           {
@@ -142,20 +173,99 @@ class Bitrix24IntegrationService {
           }
         );
 
-        if (response.data.result) {
+        if (milestoneResponse.data.result) {
+          const milestoneTaskId = milestoneResponse.data.result.task.id;
           createdTasks.push({
             feature: milestone.phase,
-            taskId: response.data.result.task.id,
+            taskId: milestoneTaskId,
             priority: "Milestone",
             type: "Milestone",
           });
+          console.log(
+            `✅ Created milestone task: ${milestone.phase} with ID: ${milestoneTaskId}`
+          );
+
+          // Create subtasks for each deliverable in the milestone
+          const deliverables = Array.isArray(milestone.deliverables)
+            ? milestone.deliverables
+            : milestone.deliverables
+            ? [milestone.deliverables]
+            : [];
+
+          for (const deliverable of deliverables) {
+            const subtaskData = {
+              fields: {
+                TITLE: deliverable,
+                DESCRIPTION: this.formatDeliverableDescription(
+                  deliverable,
+                  milestone
+                ),
+                GROUP_ID: groupId,
+                PARENT_ID: milestoneTaskId, // Link to milestone task
+                RESPONSIBLE_ID: this.getResponsibleIdForDeliverable(
+                  deliverable,
+                  resourceRequirements
+                ),
+                PRIORITY: this.getDeliverablePriority(deliverable),
+                STATUS: "1", // New
+                TAGS: ["Deliverable", milestone.phase],
+                DEADLINE: this.calculateDeliverableDeadline(
+                  deliverable,
+                  milestone
+                ),
+                CREATED_BY: 1,
+                CHANGED_BY: 1,
+              },
+            };
+
+            console.log(`Creating subtask for deliverable: ${deliverable}`);
+
+            const subtaskResponse = await axios.post(
+              `${this.webhookUrl}tasks.task.add.json`,
+              subtaskData,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                timeout: 10000,
+              }
+            );
+
+            if (subtaskResponse.data.result) {
+              createdTasks.push({
+                feature: deliverable,
+                taskId: subtaskResponse.data.result.task.id,
+                parentTaskId: milestoneTaskId,
+                priority: "Deliverable",
+                type: "Subtask",
+                milestone: milestone.phase,
+              });
+              console.log(
+                `✅ Created subtask: ${deliverable} with ID: ${subtaskResponse.data.result.task.id}`
+              );
+            } else {
+              console.error(
+                `❌ Failed to create subtask: ${deliverable}`,
+                subtaskResponse.data
+              );
+            }
+          }
+        } else {
+          console.error(
+            `❌ Failed to create milestone task: ${milestone.phase}`,
+            milestoneResponse.data
+          );
         }
       }
+
+      // Create dependency relationships between tasks
+      await this.createTaskDependencies(createdTasks, featureTaskMap);
 
       return {
         success: true,
         tasks: createdTasks,
         totalCreated: createdTasks.length,
+        featureTasks: Array.from(featureTaskMap.entries()),
       };
     } catch (error) {
       console.error("Bitrix24 task creation failed:", error.message);
@@ -261,7 +371,13 @@ Generated by ReqGenAI
 **Timeline:** ${milestone.estimate}
 
 ## Deliverables
-${milestone.deliverables.map((d) => `- ${d}`).join("\n")}
+${
+  Array.isArray(milestone.deliverables)
+    ? milestone.deliverables.map((d) => `- ${d}`).join("\n")
+    : milestone.deliverables
+    ? `- ${milestone.deliverables}`
+    : "- None specified"
+}
 
 ## Success Criteria
 - All deliverables completed
@@ -358,6 +474,203 @@ Generated by ReqGenAI
     }
 
     return responsibleId;
+  }
+
+  // Get responsible ID for deliverable based on content
+  getResponsibleIdForDeliverable(deliverable, resourceRequirements) {
+    let responsibleId = 1; // Default to project manager
+
+    if (resourceRequirements && resourceRequirements.length > 0) {
+      const deliverableLower = deliverable.toLowerCase();
+
+      // Match deliverable content to appropriate role
+      if (
+        deliverableLower.includes("authentication") ||
+        deliverableLower.includes("login") ||
+        deliverableLower.includes("user management") ||
+        deliverableLower.includes("api") ||
+        deliverableLower.includes("backend") ||
+        deliverableLower.includes("database")
+      ) {
+        const backendDev = resourceRequirements.find(
+          (r) =>
+            r.role.toLowerCase().includes("backend") ||
+            r.role.toLowerCase().includes("api")
+        );
+        if (backendDev) responsibleId = 3; // Backend developer ID
+      } else if (
+        deliverableLower.includes("ui") ||
+        deliverableLower.includes("interface") ||
+        deliverableLower.includes("frontend") ||
+        deliverableLower.includes("dashboard") ||
+        deliverableLower.includes("user experience")
+      ) {
+        const frontendDev = resourceRequirements.find(
+          (r) =>
+            r.role.toLowerCase().includes("frontend") ||
+            r.role.toLowerCase().includes("ui")
+        );
+        if (frontendDev) responsibleId = 2; // Frontend developer ID
+      } else if (
+        deliverableLower.includes("test") ||
+        deliverableLower.includes("qa") ||
+        deliverableLower.includes("quality")
+      ) {
+        const qaEngineer = resourceRequirements.find(
+          (r) =>
+            r.role.toLowerCase().includes("qa") ||
+            r.role.toLowerCase().includes("test")
+        );
+        if (qaEngineer) responsibleId = 4; // QA Engineer ID
+      } else if (
+        deliverableLower.includes("deploy") ||
+        deliverableLower.includes("infrastructure") ||
+        deliverableLower.includes("devops")
+      ) {
+        const devopsEngineer = resourceRequirements.find(
+          (r) =>
+            r.role.toLowerCase().includes("devops") ||
+            r.role.toLowerCase().includes("infrastructure")
+        );
+        if (devopsEngineer) responsibleId = 5; // DevOps Engineer ID
+      }
+    }
+
+    return responsibleId;
+  }
+
+  // Get priority for deliverable based on content
+  getDeliverablePriority(deliverable) {
+    const deliverableLower = deliverable.toLowerCase();
+
+    if (
+      deliverableLower.includes("authentication") ||
+      deliverableLower.includes("core") ||
+      deliverableLower.includes("basic") ||
+      deliverableLower.includes("foundation")
+    ) {
+      return "1"; // High priority
+    } else if (
+      deliverableLower.includes("advanced") ||
+      deliverableLower.includes("enhancement") ||
+      deliverableLower.includes("optimization")
+    ) {
+      return "2"; // Medium priority
+    } else {
+      return "3"; // Low priority
+    }
+  }
+
+  // Calculate deadline for deliverable
+  calculateDeliverableDeadline(deliverable, milestone) {
+    const milestoneMonths = parseInt(milestone.estimate);
+    const baseMonths = isNaN(milestoneMonths) ? 1 : milestoneMonths;
+
+    // Distribute deliverables across the milestone timeline
+    const deliverables = Array.isArray(milestone.deliverables)
+      ? milestone.deliverables
+      : milestone.deliverables
+      ? [milestone.deliverables]
+      : [];
+
+    const deliverableIndex = deliverables.indexOf(deliverable);
+    const totalDeliverables = deliverables.length;
+    const monthsPerDeliverable =
+      totalDeliverables > 0 ? baseMonths / totalDeliverables : baseMonths;
+
+    const deadline = new Date();
+    deadline.setMonth(
+      deadline.getMonth() +
+        Math.ceil(monthsPerDeliverable * (deliverableIndex + 1))
+    );
+
+    return deadline.toISOString().split("T")[0];
+  }
+
+  // Format deliverable description
+  formatDeliverableDescription(deliverable, milestone) {
+    return `
+# ${deliverable}
+
+**Milestone:** ${milestone.phase}
+**Timeline:** ${milestone.estimate}
+
+## Description
+This deliverable is part of the ${
+      milestone.phase
+    } milestone and contributes to the overall project success.
+
+## Requirements
+- Complete ${deliverable.toLowerCase()}
+- Follow project standards and guidelines
+- Ensure quality and testing
+- Document implementation details
+
+## Success Criteria
+- Deliverable completed on time
+- Quality standards met
+- Ready for integration
+
+---
+Generated by ReqGenAI
+    `.trim();
+  }
+
+  // Create task dependencies based on feature dependencies
+  async createTaskDependencies(createdTasks, featureTaskMap) {
+    try {
+      for (const task of createdTasks) {
+        if (
+          task.type === "Feature" &&
+          task.dependencies &&
+          task.dependencies.length > 0
+        ) {
+          for (const dependency of task.dependencies) {
+            const dependencyTaskId = featureTaskMap.get(dependency);
+            if (dependencyTaskId) {
+              // Create dependency relationship in Bitrix24
+              await this.createTaskDependency(task.taskId, dependencyTaskId);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to create task dependencies:", error.message);
+    }
+  }
+
+  // Create a single task dependency
+  async createTaskDependency(taskId, dependsOnTaskId) {
+    try {
+      const dependencyData = {
+        fields: {
+          TASK_ID: taskId,
+          DEPENDS_ON: dependsOnTaskId,
+        },
+      };
+
+      const response = await axios.post(
+        `${this.webhookUrl}tasks.task.dependencies.add.json`,
+        dependencyData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 10000,
+        }
+      );
+
+      if (response.data.result) {
+        console.log(
+          `Created dependency: Task ${taskId} depends on ${dependsOnTaskId}`
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Failed to create dependency for task ${taskId}:`,
+        error.message
+      );
+    }
   }
 }
 

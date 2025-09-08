@@ -600,7 +600,11 @@ const BlueprintSectionEditor = ({
             </label>
             {renderArrayField(
               "Deliverables",
-              milestone.deliverables || [],
+              Array.isArray(milestone.deliverables)
+                ? milestone.deliverables
+                : milestone.deliverables
+                ? [milestone.deliverables]
+                : [],
               (value) => {
                 const newMilestones = [...milestones];
                 newMilestones[index] = {
@@ -1712,9 +1716,15 @@ const BlueprintSectionEditor = ({
                         Deliverables:
                       </h6>
                       <ul className="list-disc list-inside text-sm text-gray-600">
-                        {milestone.deliverables?.map((deliverable, idx) => (
-                          <li key={idx}>{deliverable}</li>
-                        )) || <li className="text-gray-500">None specified</li>}
+                        {Array.isArray(milestone.deliverables) ? (
+                          milestone.deliverables.map((deliverable, idx) => (
+                            <li key={idx}>{deliverable}</li>
+                          ))
+                        ) : milestone.deliverables ? (
+                          <li>{milestone.deliverables}</li>
+                        ) : (
+                          <li className="text-gray-500">None specified</li>
+                        )}
                       </ul>
                     </div>
                   </div>
