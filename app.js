@@ -52,9 +52,10 @@ const connectDB = async () => {
   try {
     if (!process.env.MONGODB_URI) {
       console.error("MONGODB_URI environment variable is not set");
+      console.log("App will run without database connection");
       return;
     }
-
+    
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
@@ -62,6 +63,7 @@ const connectDB = async () => {
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error("MongoDB connection error:", error);
+    console.log("App will run without database connection");
     // Don't exit process in serverless environment
     if (process.env.NODE_ENV !== "production") {
       process.exit(1);
@@ -69,8 +71,18 @@ const connectDB = async () => {
   }
 };
 
-// Connect to database
-connectDB();
+// Connect to database (only if URI is available)
+if (process.env.MONGODB_URI) {
+  connectDB();
+} else {
+  console.log("Skipping database connection - MONGODB_URI not set");
+}
+
+// Database connection status middleware
+app.use((req, res, next) => {
+  req.dbConnected = mongoose.connection.readyState === 1;
+  next();
+});
 
 // API Routes
 app.use("/api/inputs", inputRoutes);
@@ -90,6 +102,14 @@ if (process.env.NODE_ENV === "production") {
 
 // Health check endpoint
 app.get("/health", (req, res) => {
+  const dbStatus = mongoose.connection.readyState;
+  const dbStatusText = {
+    0: "disconnected",
+    1: "connected", 
+    2: "connecting",
+    3: "disconnecting"
+  }[dbStatus] || "unknown";
+
   res.status(200).json({
     status: "OK",
     timestamp: new Date().toISOString(),
@@ -97,6 +117,11 @@ app.get("/health", (req, res) => {
     environment: process.env.NODE_ENV || "development",
     vercel: !!process.env.VERCEL,
     region: process.env.VERCEL_REGION || "local",
+    database: {
+      status: dbStatusText,
+      connected: dbStatus === 1,
+      uri_configured: !!process.env.MONGODB_URI
+    }
   });
 });
 
