@@ -20,6 +20,10 @@ const pdfRoutes = require("./routes/pdf"); // PDF generation routes
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Add version for debugging
+const APP_VERSION = "1.0.1";
+console.log(`ReqGenAI API Server v${APP_VERSION} starting...`);
+
 // Security middleware
 app.use(helmet());
 
@@ -50,13 +54,16 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // MongoDB connection
 const connectDB = async () => {
   try {
-    if (!process.env.MONGODB_URI) {
-      console.error("MONGODB_URI environment variable is not set");
+    const mongoUri = process.env.MONGODB_URI;
+    
+    if (!mongoUri || typeof mongoUri !== 'string' || mongoUri.trim() === '') {
+      console.error("MONGODB_URI environment variable is not set or invalid");
       console.log("App will run without database connection");
       return;
     }
-    
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+
+    console.log("Attempting to connect to MongoDB...");
+    const conn = await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
     });
@@ -71,11 +78,14 @@ const connectDB = async () => {
   }
 };
 
-// Connect to database (only if URI is available)
-if (process.env.MONGODB_URI) {
+// Connect to database (only if URI is available and valid)
+const mongoUri = process.env.MONGODB_URI;
+if (mongoUri && typeof mongoUri === 'string' && mongoUri.trim() !== '') {
+  console.log("MongoDB URI found, attempting connection...");
   connectDB();
 } else {
-  console.log("Skipping database connection - MONGODB_URI not set");
+  console.log("Skipping database connection - MONGODB_URI not set or invalid");
+  console.log("MongoDB URI value:", mongoUri);
 }
 
 // Database connection status middleware
@@ -103,15 +113,17 @@ if (process.env.NODE_ENV === "production") {
 // Health check endpoint
 app.get("/health", (req, res) => {
   const dbStatus = mongoose.connection.readyState;
-  const dbStatusText = {
-    0: "disconnected",
-    1: "connected", 
-    2: "connecting",
-    3: "disconnecting"
-  }[dbStatus] || "unknown";
+  const dbStatusText =
+    {
+      0: "disconnected",
+      1: "connected",
+      2: "connecting",
+      3: "disconnecting",
+    }[dbStatus] || "unknown";
 
   res.status(200).json({
     status: "OK",
+    version: APP_VERSION,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || "development",
@@ -120,8 +132,8 @@ app.get("/health", (req, res) => {
     database: {
       status: dbStatusText,
       connected: dbStatus === 1,
-      uri_configured: !!process.env.MONGODB_URI
-    }
+      uri_configured: !!process.env.MONGODB_URI,
+    },
   });
 });
 
