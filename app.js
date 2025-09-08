@@ -102,7 +102,9 @@ app.get("/health", (req, res) => {
 
 // Simple ping endpoint for basic connectivity test
 app.get("/ping", (req, res) => {
-  res.status(200).json({ message: "pong", timestamp: new Date().toISOString() });
+  res
+    .status(200)
+    .json({ message: "pong", timestamp: new Date().toISOString() });
 });
 
 // Root endpoint

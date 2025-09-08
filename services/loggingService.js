@@ -4,7 +4,8 @@ const ActivityLog = require("../models/ActivityLog");
 class LoggingService {
   constructor() {
     this.isEnabled = process.env.LOGGING_ENABLED !== "false";
-    this.isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    this.isServerless =
+      process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
   }
 
   async logActivity({
@@ -25,7 +26,7 @@ class LoggingService {
         userId,
         projectId,
         duration,
-        details
+        details,
       });
       return;
     }
