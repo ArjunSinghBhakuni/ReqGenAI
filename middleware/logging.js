@@ -9,8 +9,13 @@ const logApiRequest = (req, res, next) => {
   res.end = function (...args) {
     const duration = Date.now() - startTime;
 
-    // Log the API call
-    loggingService.logApiCall(req, res, duration);
+    // Log the API call safely
+    try {
+      loggingService.logApiCall(req, res, duration);
+    } catch (error) {
+      console.error("Logging error:", error);
+      // Don't let logging errors crash the function
+    }
 
     // Call original end method
     originalEnd.apply(this, args);
@@ -82,15 +87,20 @@ const logUserActivity = (action, description) => {
 
 // Error logging middleware
 const logError = (error, req, res, next) => {
-  loggingService.logError(error, {
-    method: req.method,
-    url: req.originalUrl,
-    body: req.body,
-    params: req.params,
-    query: req.query,
-    userId: req.user?.userId,
-    projectId: req.params.projectId || req.body.projectId,
-  });
+  try {
+    loggingService.logError(error, {
+      method: req.method,
+      url: req.originalUrl,
+      body: req.body,
+      params: req.params,
+      query: req.query,
+      userId: req.user?.userId,
+      projectId: req.params.projectId || req.body.projectId,
+    });
+  } catch (loggingError) {
+    console.error("Error logging failed:", loggingError);
+    // Don't let logging errors crash the function
+  }
 
   next(error);
 };

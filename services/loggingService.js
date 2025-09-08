@@ -4,6 +4,7 @@ const ActivityLog = require("../models/ActivityLog");
 class LoggingService {
   constructor() {
     this.isEnabled = process.env.LOGGING_ENABLED !== "false";
+    this.isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
   }
 
   async logActivity({
@@ -17,6 +18,17 @@ class LoggingService {
     req = null,
   }) {
     if (!this.isEnabled) return;
+
+    // In serverless environment, just log to console to avoid DB connection issues
+    if (this.isServerless) {
+      console.log(`[${status.toUpperCase()}] ${action}: ${description}`, {
+        userId,
+        projectId,
+        duration,
+        details
+      });
+      return;
+    }
 
     try {
       const logData = {

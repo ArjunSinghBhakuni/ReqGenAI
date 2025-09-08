@@ -95,7 +95,14 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || "development",
+    vercel: !!process.env.VERCEL,
+    region: process.env.VERCEL_REGION || "local",
   });
+});
+
+// Simple ping endpoint for basic connectivity test
+app.get("/ping", (req, res) => {
+  res.status(200).json({ message: "pong", timestamp: new Date().toISOString() });
 });
 
 // Root endpoint
