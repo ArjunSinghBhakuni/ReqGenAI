@@ -3,7 +3,7 @@ const Notification = require("../models/Notification");
 
 class NotificationService {
   constructor() {
-    this.defaultUserId = process.env.DEFAULT_USER_ID || "system";
+    this.defaultUserId = "system"; // Always use system for dashboard app
   }
 
   /**

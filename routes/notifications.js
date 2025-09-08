@@ -8,13 +8,13 @@ const router = express.Router();
 // No API key authentication for now
 // router.use(apiKeyAuth);
 
-// GET /api/notifications - Get user notifications
+// GET /api/notifications - Get all notifications (dashboard app)
 router.get("/", async (req, res) => {
   try {
-    const { userId, limit = 50, skip = 0 } = req.query;
+    const { limit = 50, skip = 0 } = req.query;
 
     const notifications = await notificationService.getUserNotifications(
-      userId,
+      "system", // Always use system for dashboard app
       parseInt(limit),
       parseInt(skip)
     );
@@ -36,9 +36,7 @@ router.get("/", async (req, res) => {
 // GET /api/notifications/count - Get unread notification count
 router.get("/count", async (req, res) => {
   try {
-    const { userId } = req.query;
-
-    const count = await notificationService.getUnreadCount(userId);
+    const count = await notificationService.getUnreadCount("system"); // Always use system for dashboard app
 
     res.status(200).json({
       success: true,
@@ -125,7 +123,6 @@ router.put("/:notificationId/archive", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const {
-      userId,
       projectId,
       type,
       title,
@@ -143,7 +140,7 @@ router.post("/", async (req, res) => {
     }
 
     const notification = await notificationService.createNotification({
-      userId,
+      userId: "system", // Always use system for dashboard app
       projectId,
       type,
       title,

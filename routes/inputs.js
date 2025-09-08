@@ -23,9 +23,7 @@ const callN8NRequirementExtraction = async (projectId, inputText) => {
 
     const payload = {
       project_id: projectId,
-      input: {
-        text: inputText,
-      },
+      input: inputText,
     };
 
     console.log(`Calling N8N requirement extraction for project: ${projectId}`);
@@ -89,23 +87,8 @@ const createInput = async (
 
     await document.save();
 
-    // Automatically trigger requirement extraction via N8N
-    console.log(
-      `Project created with ID: ${projectId}, initiating requirement extraction...`
-    );
-
-    const n8nResult = await callN8NRequirementExtraction(projectId, content);
-
-    if (n8nResult.success) {
-      console.log(
-        `N8N requirement extraction initiated successfully for project: ${projectId}`
-      );
-    } else {
-      console.error(
-        `Failed to initiate N8N requirement extraction for project: ${projectId}`,
-        n8nResult.error
-      );
-    }
+    // Project created successfully - requirement extraction will be triggered manually
+    console.log(`Project created with ID: ${projectId}`);
 
     return {
       success: true,

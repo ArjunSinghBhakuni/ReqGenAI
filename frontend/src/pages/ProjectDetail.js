@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { requirementAPI, pdfAPI, projectAPI, actionAPI } from "../services/api";
 import { useToast } from "../utils/toast";
+import { useNotifications } from "../context/NotificationContext";
 import JsonSectionEditor from "../components/JsonSectionEditor";
 import RequirementsSectionEditor from "../components/RequirementsSectionEditor";
 import BRDSectionEditor from "../components/BRDSectionEditor";
@@ -11,6 +12,7 @@ const ProjectDetail = () => {
   const { project_id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { playNotificationSound } = useNotifications();
 
   const [project, setProject] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -28,10 +30,16 @@ const ProjectDetail = () => {
   const [markdownCache, setMarkdownCache] = useState({});
   const [loadingMarkdown, setLoadingMarkdown] = useState(false);
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (project_id) {
       loadProjectDetails(project_id);
+
+      // Request notification permission
+      if (window.Notification && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
     }
   }, [project_id]);
 
@@ -43,8 +51,31 @@ const ProjectDetail = () => {
       const response = await requirementAPI.getById(projectId);
 
       if (response.data.success) {
-        setProject(response.data.project);
-        setDocuments(response.data.documents);
+        const newProject = response.data.project;
+        const newDocuments = response.data.documents;
+
+        // Check for new documents by comparing with existing ones
+        if (documents.length > 0) {
+          const newDocumentTypes = new Set();
+
+          // Find new documents by comparing with existing ones
+          newDocuments.forEach((newDoc) => {
+            const existingDoc = documents.find(
+              (doc) => doc.documentId === newDoc.documentId
+            );
+            if (!existingDoc) {
+              newDocumentTypes.add(newDoc.type);
+            }
+          });
+
+          // Create notifications for new document types
+          for (const docType of newDocumentTypes) {
+            await createNotificationForNewDocument(docType, newProject.name);
+          }
+        }
+
+        setProject(newProject);
+        setDocuments(newDocuments);
       } else {
         setError("Failed to load project details");
       }
@@ -55,6 +86,68 @@ const ProjectDetail = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Manual refresh function
+  const refreshProjectData = async () => {
+    setRefreshing(true);
+    try {
+      await loadProjectDetails(project_id);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Create notification for new document
+  const createNotificationForNewDocument = async (docType, projectName) => {
+    try {
+      const notificationMessages = {
+        REQUIREMENTS: {
+          title: "Requirements Extracted!",
+          message: `Requirements have been successfully extracted for project "${projectName}"`,
+        },
+        BRD: {
+          title: "BRD Generated!",
+          message: `Business Requirements Document has been generated for project "${projectName}"`,
+        },
+        BLUEPRINT: {
+          title: "Blueprint Created!",
+          message: `Project blueprint has been created for project "${projectName}"`,
+        },
+      };
+
+      const notification = notificationMessages[docType];
+      if (notification) {
+        // Create notification via API
+        await projectAPI.createNotification({
+          title: notification.title,
+          message: notification.message,
+          type: docType,
+          projectId: project_id,
+          projectName: projectName,
+        });
+
+        // Show toast notification
+        toast.success({
+          title: notification.title,
+          description: notification.message,
+          duration: 5000,
+        });
+
+        // Play notification sound
+        playNotificationSound();
+
+        // Show browser notification if permission is granted
+        if (window.Notification && Notification.permission === "granted") {
+          new Notification(notification.title, {
+            body: notification.message,
+            icon: "/favicon.ico",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error creating notification:", error);
     }
   };
 
@@ -254,6 +347,11 @@ const ProjectDetail = () => {
           title: "Generation Started",
           description: `${stepType} generation has been initiated. You'll be notified when it's complete.`,
         });
+
+        // Refresh project data to show updated status
+        setTimeout(() => {
+          refreshProjectData();
+        }, 1000); // Wait 1 second then refresh
       }
     } catch (error) {
       console.error("Generation error:", error);
@@ -1199,11 +1297,21 @@ const ProjectDetail = () => {
             <div>
               {project?.input ? (
                 <div className="prose max-w-none">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-md">
-                    {typeof project.input === "string"
-                      ? project.input
-                      : JSON.stringify(project.input, null, 2)}
-                  </pre>
+                  {/* Check if this is an email project with HTML content */}
+                  {project.source === "email" && project.input.htmlContent ? (
+                    <div
+                      className="text-sm text-gray-700 bg-gray-50 p-4 rounded-md border"
+                      dangerouslySetInnerHTML={{
+                        __html: project.input.htmlContent,
+                      }}
+                    />
+                  ) : (
+                    <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-md">
+                      {typeof project.input === "string"
+                        ? project.input
+                        : JSON.stringify(project.input, null, 2)}
+                    </pre>
+                  )}
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-8">
@@ -1739,7 +1847,33 @@ const ProjectDetail = () => {
             >
               {project.status}
             </span>
-            <span className="text-sm text-gray-500">ID: {project.req_id}</span>
+            {refreshing && (
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-full">
+                <svg
+                  className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Refreshing...
+              </span>
+            )}
+            <span className="text-sm text-gray-500">
+              Project ID: {project.project_id}
+            </span>
             <span className="text-sm text-gray-500">
               Created: {formatDate(project.createdAt)}
             </span>

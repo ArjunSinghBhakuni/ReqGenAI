@@ -106,12 +106,12 @@ export const NotificationProvider = ({ children }) => {
   };
 
   // Fetch notifications
-  const fetchNotifications = async (userId = "system") => {
+  const fetchNotifications = async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "CLEAR_ERROR" });
 
-      const response = await notificationAPI.getAll(userId);
+      const response = await notificationAPI.getAll();
 
       if (response.data.success) {
         dispatch({ type: "SET_NOTIFICATIONS", payload: response.data.data });
@@ -129,9 +129,9 @@ export const NotificationProvider = ({ children }) => {
   };
 
   // Fetch unread count
-  const fetchUnreadCount = async (userId = "system") => {
+  const fetchUnreadCount = async () => {
     try {
-      const response = await notificationAPI.getUnreadCount(userId);
+      const response = await notificationAPI.getUnreadCount();
 
       if (response.data.success) {
         const newCount = response.data.count;
@@ -160,9 +160,9 @@ export const NotificationProvider = ({ children }) => {
   };
 
   // Mark notification as read
-  const markAsRead = async (notificationId, userId = "system") => {
+  const markAsRead = async (notificationId) => {
     try {
-      const response = await notificationAPI.markAsRead(notificationId, userId);
+      const response = await notificationAPI.markAsRead(notificationId);
 
       if (response.data.success) {
         dispatch({ type: "MARK_AS_READ", payload: notificationId });
@@ -173,9 +173,9 @@ export const NotificationProvider = ({ children }) => {
   };
 
   // Mark all notifications as read
-  const markAllAsRead = async (userId = "system") => {
+  const markAllAsRead = async () => {
     try {
-      const response = await notificationAPI.markAllAsRead(userId);
+      const response = await notificationAPI.markAllAsRead();
 
       if (response.data.success) {
         dispatch({ type: "MARK_ALL_AS_READ" });
@@ -186,9 +186,9 @@ export const NotificationProvider = ({ children }) => {
   };
 
   // Archive notification
-  const archiveNotification = async (notificationId, userId = "system") => {
+  const archiveNotification = async (notificationId) => {
     try {
-      const response = await notificationAPI.archive(notificationId, userId);
+      const response = await notificationAPI.archive(notificationId);
 
       if (response.data.success) {
         dispatch({ type: "ARCHIVE_NOTIFICATION", payload: notificationId });
@@ -199,10 +199,10 @@ export const NotificationProvider = ({ children }) => {
   };
 
   // Handle notification click
-  const handleNotificationClick = async (notification, userId = "system") => {
+  const handleNotificationClick = async (notification) => {
     // Mark as read if unread
     if (notification.status === "unread") {
-      await markAsRead(notification.notificationId, userId);
+      await markAsRead(notification.notificationId);
     }
 
     // Navigate to project page directly
@@ -213,7 +213,7 @@ export const NotificationProvider = ({ children }) => {
   };
 
   // Poll for new notifications (real-time updates)
-  const startPolling = (userId = "system", interval = 5000) => {
+  const startPolling = (interval = 5000) => {
     // Clear any existing polling
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -221,7 +221,7 @@ export const NotificationProvider = ({ children }) => {
 
     // Start new polling
     pollingIntervalRef.current = setInterval(() => {
-      fetchUnreadCount(userId);
+      fetchUnreadCount();
     }, interval);
 
     return () => {
@@ -240,17 +240,10 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  // Load initial data and start polling
+  // Load initial data only (no polling)
   useEffect(() => {
-    const userId = "system"; // You can get this from user context or localStorage
-    fetchNotifications(userId);
-    fetchUnreadCount(userId);
-
-    // Start polling for real-time updates
-    const cleanup = startPolling(userId, 5000); // Poll every 5 seconds
-
-    // Cleanup on unmount
-    return cleanup;
+    fetchNotifications();
+    fetchUnreadCount();
   }, []);
 
   // Clear new notification after a delay

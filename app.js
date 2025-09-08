@@ -97,6 +97,7 @@ app.get("/", (req, res) => {
       brd: "/api/save-generated-brd",
       blueprint: "/api/save-blueprint",
       pdf: "/api/pdf", // PDF generation
+      processAutoEmail: "/api/process-auto-email", // Process emails from n8n
     },
   });
 });

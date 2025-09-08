@@ -86,19 +86,7 @@ router.post("/save-blueprint", async (req, res) => {
       blueprintContent
     );
 
-    // Create notification for blueprint generation completion
-    try {
-      await notificationService.createProcessNotification(
-        {
-          ...req.body,
-          documentId: result.documentId,
-        },
-        "BLUEPRINT"
-      );
-    } catch (notificationError) {
-      console.error("Failed to create notification:", notificationError);
-      // Don't fail the webhook if notification creation fails
-    }
+    // Notification will be created by frontend when data is received
 
     res.status(201).json({
       success: true,
@@ -137,19 +125,7 @@ router.post("/save-generated-brd", async (req, res) => {
 
     const result = await saveDocument(project_id, "BRD", brdContent);
 
-    // Create notification for BRD generation completion
-    try {
-      await notificationService.createProcessNotification(
-        {
-          ...req.body,
-          documentId: result.documentId,
-        },
-        "BRD"
-      );
-    } catch (notificationError) {
-      console.error("Failed to create notification:", notificationError);
-      // Don't fail the webhook if notification creation fails
-    }
+    // Notification will be created by frontend when data is received
 
     res.status(201).json({
       success: true,
@@ -198,19 +174,7 @@ router.post("/save-extracted-requirement", async (req, res) => {
       requirementsContent
     );
 
-    // Create notification for requirements extraction completion
-    try {
-      await notificationService.createProcessNotification(
-        {
-          ...req.body,
-          documentId: result.documentId,
-        },
-        "REQUIREMENTS"
-      );
-    } catch (notificationError) {
-      console.error("Failed to create notification:", notificationError);
-      // Don't fail the webhook if notification creation fails
-    }
+    // Notification will be created by frontend when data is received
 
     res.status(201).json({
       success: true,

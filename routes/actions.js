@@ -70,11 +70,19 @@ router.post("/extract/:projectId", async (req, res) => {
     );
 
     // Prepare payload for N8N requirement extraction webhook
+    let inputText;
+
+    // Check if this is an email project - if so, send only the content field
+    if (project.source === "email" && rawInputDoc.content.content) {
+      inputText = rawInputDoc.content.content;
+    } else {
+      // For other sources, extract the text content
+      inputText = rawInputDoc.content.text || rawInputDoc.content;
+    }
+
     const n8nPayload = {
       project_id: projectId,
-      input: {
-        text: rawInputDoc.content.text || rawInputDoc.content,
-      },
+      input: inputText,
     };
 
     console.log(`Calling N8N requirement extraction for project: ${projectId}`);

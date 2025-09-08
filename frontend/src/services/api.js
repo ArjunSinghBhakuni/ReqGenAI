@@ -72,22 +72,22 @@ export const n8nAPI = {
 
 // Notification API endpoints
 export const notificationAPI = {
-  // Get all notifications for user
-  getAll: (userId) => api.get(`/notifications?userId=${userId}`),
+  // Get all notifications (dashboard app)
+  getAll: () => api.get(`/notifications`),
 
   // Get unread count
-  getUnreadCount: (userId) => api.get(`/notifications/count?userId=${userId}`),
+  getUnreadCount: () => api.get(`/notifications/count`),
 
   // Mark notification as read
-  markAsRead: (notificationId, userId) =>
-    api.put(`/notifications/${notificationId}/read`, { userId }),
+  markAsRead: (notificationId) =>
+    api.put(`/notifications/${notificationId}/read`),
 
   // Mark all notifications as read
-  markAllAsRead: (userId) => api.put("/notifications/read-all", { userId }),
+  markAllAsRead: () => api.put("/notifications/read-all"),
 
   // Archive notification
-  archive: (notificationId, userId) =>
-    api.put(`/notifications/${notificationId}/archive`, { userId }),
+  archive: (notificationId) =>
+    api.put(`/notifications/${notificationId}/archive`),
 
   // Create notification
   create: (data) => api.post("/notifications", data),
@@ -132,6 +132,10 @@ export const projectAPI = {
       jsonContent,
       documentType,
     }),
+
+  // Create notification
+  createNotification: (notificationData) =>
+    api.post("/notifications", notificationData),
 };
 
 export const actionAPI = {
