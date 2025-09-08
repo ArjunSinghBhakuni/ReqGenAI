@@ -5,6 +5,7 @@
 ### 1. 🌟 Vercel (Recommended - Easiest)
 
 **Steps:**
+
 1. Push your code to GitHub
 2. Go to [vercel.com](https://vercel.com) and sign up
 3. Click "New Project" and import your GitHub repository
@@ -22,6 +23,7 @@
 ### 2. 🐳 Railway (Great for Node.js)
 
 **Steps:**
+
 1. Install Railway CLI: `npm install -g @railway/cli`
 2. Login: `railway login`
 3. Initialize: `railway init`
@@ -32,6 +34,7 @@
 ### 3. ☁️ Render (Free Tier Available)
 
 **Steps:**
+
 1. Go to [render.com](https://render.com) and sign up
 2. Click "New Web Service"
 3. Connect your GitHub repository
@@ -47,11 +50,13 @@
 **For any Docker-compatible platform:**
 
 1. **Build the Docker image:**
+
    ```bash
    docker build -t reqgenai .
    ```
 
 2. **Run locally:**
+
    ```bash
    docker run -p 8080:8080 -e MONGODB_URI=your_uri reqgenai
    ```
@@ -65,17 +70,20 @@
 ## 📋 Pre-Deployment Checklist
 
 ### Backend Setup
+
 - [ ] MongoDB database created (MongoDB Atlas recommended)
 - [ ] Environment variables configured
 - [ ] N8N webhook URLs set up
 - [ ] CORS configured for production domain
 
 ### Frontend Setup
+
 - [ ] API base URL updated for production
 - [ ] Build command tested: `cd frontend && npm run build`
 - [ ] Static files served correctly
 
 ### Security
+
 - [ ] Environment variables secured
 - [ ] Rate limiting configured
 - [ ] CORS properly set up
@@ -129,6 +137,7 @@ docker run -p 8080:8080 reqgenai
 ## 📊 Monitoring
 
 After deployment, monitor:
+
 - Application logs
 - Database connections
 - API response times
@@ -138,6 +147,7 @@ After deployment, monitor:
 ## 🔄 Updates
 
 To update your deployed application:
+
 1. Push changes to GitHub
 2. Platform will auto-deploy (if configured)
 3. Or manually trigger deployment
