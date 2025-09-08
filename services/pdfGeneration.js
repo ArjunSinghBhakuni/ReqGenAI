@@ -406,8 +406,11 @@ const getPDFService = () => {
 };
 
 module.exports = {
-  generateDocumentPDF: (...args) => getPDFService().generateDocumentPDF(...args),
-  generatePDFFromHTML: (...args) => getPDFService().generatePDFFromHTML(...args),
-  generatePDFFromMarkdown: (...args) => getPDFService().generatePDFFromMarkdown(...args),
+  generateDocumentPDF: (...args) =>
+    getPDFService().generateDocumentPDF(...args),
+  generatePDFFromHTML: (...args) =>
+    getPDFService().generatePDFFromHTML(...args),
+  generatePDFFromMarkdown: (...args) =>
+    getPDFService().generatePDFFromMarkdown(...args),
   parseMarkdownToPDF: (...args) => getPDFService().parseMarkdownToPDF(...args),
 };

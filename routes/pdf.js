@@ -1,7 +1,6 @@
 const express = require("express");
 const Project = require("../models/Project");
 const Document = require("../models/Document");
-const pdfGenerationService = require("../services/pdfGeneration");
 const path = require("path");
 
 const router = express.Router();
@@ -37,6 +36,7 @@ router.post("/document/:projectId/:documentId", async (req, res) => {
     }
 
     // Generate PDF
+    const pdfGenerationService = require("../services/pdfGeneration");
     const result = await pdfGenerationService.generateDocumentPDF(
       document,
       project
@@ -80,6 +80,7 @@ router.post("/project/:projectId", async (req, res) => {
     });
 
     // Generate PDF
+    const pdfGenerationService = require("../services/pdfGeneration");
     const result = await pdfGenerationService.generateProjectSummaryPDF(
       project,
       documents
@@ -122,6 +123,7 @@ router.post("/generate-from-markdown", async (req, res) => {
     }
 
     // Generate PDF from markdown
+    const pdfGenerationService = require("../services/pdfGeneration");
     const result = await pdfGenerationService.generatePDFFromMarkdown(
       markdownContent,
       {
@@ -214,6 +216,7 @@ router.post("/generate-from-html-view", async (req, res) => {
     );
 
     // Generate PDF from HTML content
+    const pdfGenerationService = require("../services/pdfGeneration");
     const result = await pdfGenerationService.generatePDFFromHTML(htmlContent, {
       projectId,
       documentType: stage.toUpperCase(),
@@ -284,6 +287,7 @@ router.post("/generate-from-document", async (req, res) => {
     );
 
     // Generate PDF from the formatted document
+    const pdfGenerationService = require("../services/pdfGeneration");
     const result = await pdfGenerationService.generatePDFFromMarkdown(
       documentContent,
       {
