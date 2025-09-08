@@ -1,0 +1,256 @@
+{
+  "name": "requirement Extraction",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Extract and validate incoming data\nconst inputData = $input.first().json.body\n\n// Debug: Log the incoming data structure\nconsole.log('Incoming data:', JSON.stringify(inputData, null, 2));\n\n// Handle different payload structures\nlet content, source, subject, metadata, projectId;\n\n// Check if data comes in the original expected format\nif (inputData.normalizedTextJson && inputData.projectId) {\n  // Original format: { normalizedTextJson: {...}, projectId: \"...\" }\n  const { normalizedTextJson } = inputData;\n  content = normalizedTextJson.content;\n  source = normalizedTextJson.source;\n  subject = normalizedTextJson.subject;\n  metadata = normalizedTextJson.metadata;\n  projectId = inputData.projectId;\n}\n// Check if data comes in the new direct format\nelse if (inputData.content && inputData.projectId) {\n  // New format: { content: \"...\", metadata: {...}, projectId: \"...\" }\n  content = inputData.content;\n  source = inputData.source;\n  subject = inputData.subject;\n  metadata = inputData.metadata;\n  projectId = inputData.projectId;\n}\n// Handle edge cases or malformed data\nelse {\n  // Try to extract from any available fields\n  content = inputData.content || (inputData.normalizedTextJson && inputData.normalizedTextJson.content) || inputData.text;\n  source = inputData.source || (inputData.normalizedTextJson && inputData.normalizedTextJson.source) || 'unknown';\n  subject = inputData.subject || (inputData.normalizedTextJson && inputData.normalizedTextJson.subject) || 'No Subject';\n  metadata = inputData.metadata || (inputData.normalizedTextJson && inputData.normalizedTextJson.metadata) || {};\n  projectId = inputData.projectId || inputData.project_id || inputData.id;\n}\n\n// Debug: Log extracted values\nconsole.log('Extracted values:', { content: !!content, projectId: !!projectId });\n\n// Validate required fields\nif (!content || !projectId) {\n  const missingFields = [];\n  if (!content) missingFields.push('content');\n  if (!projectId) missingFields.push('projectId');\n  \n  throw new Error(`Missing required fields: ${missingFields.join(', ')}. Available keys: ${Object.keys(inputData).join(', ')}`);\n}\n\n// Prepare data for AI processing\nconst processedData = {\n  projectId: projectId,\n  content: content,\n  source: source || 'unknown',\n  subject: subject || 'No Subject',\n  metadata: metadata || {},\n  timestamp: new Date().toISOString(),\n  // Check if this is a clarification re-run\n  isReClarification: inputData.clarificationResponses ? true : false,\n  clarificationResponses: inputData.clarificationResponses || []\n};\n\nreturn [{ json: processedData }];"
+      },
+      "id": "5945cbd6-bf7c-4a60-bd4a-31d3f36c6746",
+      "name": "Data Preparation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Try to get projectId from Data Preparation node safely\nlet projectId =$('Data Preparation').first().json.projectId ;\n\n\n// Get first input JSON\nlet aiResponse = $input.first().json;\n\n// If wrapped in output → unwrap\nif (aiResponse.output) {\n  aiResponse = aiResponse.output;\n}\n\n// If wrapped in extractedRequirment → unwrap\nif (aiResponse.extractedRequirment) {\n  aiResponse = aiResponse.extractedRequirment;\n}\n\n// Normalize arrays\nconst normalize = (arr) => Array.isArray(arr) ? arr : [];\n\nconst functionalRequirements = normalize(aiResponse.functionalRequirements);\nconst nonFunctionalRequirements = normalize(aiResponse.nonFunctionalRequirements);\nconst constraints = normalize(aiResponse.constraints);\nconst successCriteria = normalize(aiResponse.successCriteria);\nconst ambiguities = normalize(aiResponse.ambiguities);\n\n// Simple confidence score\nconst allReqs = [...functionalRequirements, ...nonFunctionalRequirements];\nconst confidenceScore = allReqs.length > 0\n  ? (allReqs.length / (allReqs.length + 2))\n  : 0.8;\n\n// Clarification logic\nconst needsClarification = (\n  ambiguities.length > 0 ||\n  confidenceScore < 0.6 ||\n  successCriteria.length === 0\n);\n\n// Final result body\nconst result = {\n  extractedRequirment: {\n    projectId,\n    requirements: {\n      functionalRequirements,\n      nonFunctionalRequirements,\n      constraints,\n      successCriteria,\n      ambiguities\n    },\n    confidenceScore,\n    needsClarification,\n    clarificationCount: ambiguities.length,\n    metadata: {\n      extractedBy: \"AI\",\n      processedAt: new Date().toISOString()\n    }\n  }\n};\n\nreturn [{ json: result }];\n"
+      },
+      "id": "850ef5ce-752c-42e6-b2a8-44ad1b2a20c3",
+      "name": "Process & Score Requirements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=System Instruction:\nYou are an expert Requirement Analyst AI. Your job is to extract clear, structured software requirements from messy input such as emails, meeting notes, PDFs, or transcripts. Always return a well-structured JSON. Do not include extra text, only JSON.\n\nInput:\nYou will receive text content from the user such as project requests, feature descriptions, or meeting transcripts.\n\nTask:\n\nAnalyze the input carefully.\n\nExtract Functional Requirements (FRs) → features, behaviors, user flows.\n\nExtract Non-Functional Requirements (NFRs) → performance, security, scalability, compliance, UX constraints.\n\nExtract Constraints → deadlines, budget, technology limits.\n\nExtract Success Criteria → clear metrics that define project success.\n\nDetect Ambiguities → vague, incomplete, or conflicting information. Suggest clarifying questions.\n\nOutput Format (JSON only):\n\n{\"extractedrequirement\":{\n  \"functionalRequirements\": [\n    {\n      \"id\": \"FR-001\",\n      \"description\": \"System must allow users to search properties by location, price, and property type\",\n      \"priority\": \"high\",\n      \"category\": \"search\"\n    }\n  ],\n  \"nonFunctionalRequirements\": [\n    {\n      \"id\": \"NFR-001\",\n      \"description\": \"System should support 10,000 concurrent users\",\n      \"type\": \"performance\"\n    }\n  ],\n  \"constraints\": [\n    {\n      \"description\": \"Project must be completed within 6 months\",\n      \"type\": \"timeline\"\n    }\n  ],\n  \"successCriteria\": [\n    \"At least 80% of users can complete property search within 3 clicks\",\n    \"System uptime of 99.9%\"\n  ],\n  \"ambiguities\": [\n    {\n      \"area\": \"Payment Integration\",\n      \"question\": \"Should the platform support both credit cards and UPI for transactions?\",\n      \"impact\": \"high\"\n    }\n  ]\n}\n}\n\n⚡ This JSON will then be passed into your post-processing code (the one you pasted) which:\n\nAssigns IDs (FR-001, NFR-001 etc.)\n\nCalculates confidence scores\n\nAdds extraction timestamp\n\nFlags ambiguities for user clarification",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        0
+      ],
+      "id": "d09ad34f-a33d-4ab7-900f-cde77f492c52",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        208
+      ],
+      "id": "ccdf28d6-c34c-4ff1-8bf5-4a8006492728",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qrlro3KoOImbSpFG",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\"extractedRequirment\":{\n  \"functionalRequirements\": [\n    {\n      \"id\": \"FR-001\",\n      \"description\": \"System must allow users to search properties by location, price range, and property type\",\n      \"priority\": \"high\",\n      \"category\": \"search\"\n    },\n    {\n      \"id\": \"FR-002\",\n      \"description\": \"Users must be able to register, log in, and manage their profiles\",\n      \"priority\": \"high\",\n      \"category\": \"user-management\"\n    }\n  ],\n  \"nonFunctionalRequirements\": [\n    {\n      \"id\": \"NFR-001\",\n      \"description\": \"The system should handle at least 10,000 concurrent users\",\n      \"type\": \"performance\"\n    },\n    {\n      \"id\": \"NFR-002\",\n      \"description\": \"The website must comply with GDPR standards\",\n      \"type\": \"compliance\"\n    }\n  ],\n  \"constraints\": [\n    {\n      \"description\": \"Project must be delivered within 6 months\",\n      \"type\": \"timeline\"\n    },\n    {\n      \"description\": \"Budget is limited to $200,000\",\n      \"type\": \"budget\"\n    }\n  ],\n  \"successCriteria\": [\n    \"80% of users can find a property within 3 clicks\",\n    \"System uptime of 99.9% over a 1-year period\"\n  ],\n  \"ambiguities\": [\n    {\n      \"area\": \"Payment Methods\",\n      \"question\": \"Should the platform support UPI, PayPal, and credit cards?\",\n      \"impact\": \"high\"\n    },\n    {\n      \"area\": \"Property Verification\",\n      \"question\": \"Is manual verification of property listings required before publishing?\",\n      \"impact\": \"medium\"\n    }\n  ]\n}\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        208
+      ],
+      "id": "1fdcad39-6eee-4d8d-9c8e-dc9c1b0ac496",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": " https://ac27819dd5d0.ngrok-free.app/api/workflow/extraction",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.extractedRequirment }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "191fd184-35eb-4b12-8cc3-a683d7f011e2",
+      "name": "Store Requirements in Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1152,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "requirement-extraction",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "5cc01170-f79f-496d-8f8f-b5a1888912c4",
+      "name": "Webhook - Requirement Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "requirement-extraction-webhook"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        496,
+        224
+      ],
+      "id": "56d8fc39-2ded-4214-a131-d9315a10e660",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        416,
+        224
+      ],
+      "id": "73921c4a-971b-47c7-87c8-32715be069d6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rEaeXZobzWkc8Eji",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Data Preparation": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process & Score Requirements": {
+      "main": [
+        [
+          {
+            "node": "Store Requirements in Backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Process & Score Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Requirement Input": {
+      "main": [
+        [
+          {
+            "node": "Data Preparation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1f7277ea-725a-48af-937a-9873aecc3f92",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "022048e743bea81b2f94030a047be574c15ac4e68ae2bbe1b9d907b8bfbbccb7"
+  },
+  "id": "UqCMb1Sj4Tkg9gEH",
+  "tags": [
+    {
+      "createdAt": "2025-09-03T17:51:21.250Z",
+      "updatedAt": "2025-09-03T17:51:21.250Z",
+      "id": "7q04Qqf560VxJcfR",
+      "name": "Pipeline"
+    },
+    {
+      "createdAt": "2025-09-03T17:51:21.333Z",
+      "updatedAt": "2025-09-03T17:51:21.333Z",
+      "id": "Db8IRgRx63jNYwOz",
+      "name": "AI Processing"
+    },
+    {
+      "createdAt": "2025-09-03T17:51:21.275Z",
+      "updatedAt": "2025-09-03T17:51:21.275Z",
+      "id": "hUstExS31v7ATbUF",
+      "name": "Requirements"
+    }
+  ]
+}

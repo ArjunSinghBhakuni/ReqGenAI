@@ -1,0 +1,229 @@
+{
+  "name": "BRD Generation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "brd-generation",
+        "options": {}
+      },
+      "id": "8575c559-d027-4053-b8ba-8c38b61bc9de",
+      "name": "BRD Generation Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "brd-generation-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and normalize input\nlet rawInput = $input.first().json.body;\n\n// Handle case where input is an array\nconst input = Array.isArray(rawInput) ? rawInput[0] : rawInput;\n\n// Validate required fields\nif (!input || !input.projectId || !input.requirements) {\n  return [\n    {\n      json: {\n        error: 'Missing required fields: projectId or requirements',\n        success: false,\n        receivedKeys: Object.keys(rawInput || {})\n      }\n    }\n  ];\n}\n\n// Structure the input for BRD generation\nconst structuredInput = {\n  projectId: input.projectId,\n  source: input.source || 'AI',\n  subject: input.subject || 'Requirements Extraction',\n  extractionTimestamp: input.extractionTimestamp || new Date().toISOString(),\n  overallConfidence: input.overallConfidence ?? null,\n  needsClarification: input.needsClarification ?? null,\n  clarificationCount: input.clarificationCount ?? 0,\n  requirements: input.requirements || {},\n  isReClarification: input.isReClarification || false,\n  originalClarifications: input.originalClarifications || [],\n  metadata: input.requirements?.metadata || {},\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('Structured Input:', JSON.stringify(structuredInput, null, 2));\n\nreturn [\n  {\n    json: structuredInput\n  }\n];\n"
+      },
+      "id": "fc524afb-4111-4c20-a7d7-87659824796a",
+      "name": "Validate & Structure Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "= https://ac27819dd5d0.ngrok-free.app/api/brd/store",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-execution-id",
+              "value": "={{ $executionId }}"
+            },
+            {
+              "name": "x-n8n-node-id",
+              "value": "brd-generator"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.output }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "124d0935-17e3-4f47-bdff-381b9b05fffa",
+      "name": "Send BRD to Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# AI Agent Prompt for Business Requirements Document Generation\n\nYou are a specialized AI agent that generates comprehensive Business Requirements Documents (BRDs) from project requirements input. Your task is to analyze the provided requirements and produce a structured JSON output that follows the exact schema specified.\n\n## Core Instructions\n\n1. **Output Format**: Generate ONLY valid JSON - no explanations, markdown, comments, or additional text\n2. **Schema Adherence**: Follow the exact JSON structure provided below\n3. **Data Handling**: If any information is missing from input, generate reasonable defaults based on context\n4. **Timestamp Format**: Use ISO 8601 format (e.g., \"2025-01-04T12:00:00Z\")\n5. **ID Generation**: Create unique identifiers using format \"REQ-XXX\" for requirements\n6. **Priority Classification**: Use only \"high\", \"medium\", or \"low\" for priority fields\n7. **Confidence Scoring**: Use decimal values between 0.0 and 1.0\n\n## Input Variables\n- `{{ $json.projectId }}`: Project identifier\n- `{{ $json.requirements }}`: Raw project requirements text\n- `{{ $json.overallConfidence }}`: Confidence score for extraction quality\n- `{{ $json.needsClarification }}`: Boolean indicating if clarifications are needed\n- `{{ $json.clarificationCount }}`: Number of clarification items identified\n\n## Required JSON Output Schema\n\n```json\n{\n  \"projectId\": \"{{ $json.projectId }}\",\n  \"confidenceScore\": {{ $json.overallConfidence }},\n  \"needsClarification\": {{ $json.needsClarification }},\n  \"clarificationCount\": {{ $json.clarificationCount }},\n  \"status\": \"draft\",\n  \"source\": \"ai_brd_generator\",\n  \"generatedAt\": \"<ISO timestamp>\",\n  \"brd\": {\n    \"executiveSummary\": {\n      \"overview\": \"<comprehensive project overview>\",\n      \"businessValue\": \"<clear business value proposition>\",\n      \"keyBenefits\": [\n        \"<benefit 1>\",\n        \"<benefit 2>\",\n        \"<benefit 3>\"\n      ]\n    },\n    \"businessObjectives\": {\n      \"primary\": \"<primary business objective>\",\n      \"secondary\": [\n        \"<secondary objective 1>\",\n        \"<secondary objective 2>\",\n        \"<secondary objective 3>\"\n      ],\n      \"successMetrics\": [\n        \"<measurable metric 1>\",\n        \"<measurable metric 2>\",\n        \"<measurable metric 3>\"\n      ]\n    },\n    \"scope\": {\n      \"included\": [\n        \"<functional requirement 1>\",\n        \"<functional requirement 2>\",\n        \"<functional requirement 3>\"\n      ],\n      \"excluded\": [\n        \"<exclusion 1>\",\n        \"<exclusion 2>\",\n        \"<exclusion 3>\"\n      ],\n      \"assumptions\": [\n        \"<assumption 1>\",\n        \"<assumption 2>\",\n        \"<assumption 3>\"\n      ]\n    },\n    \"stakeholders\": {\n      \"primary\": [\n        {\n          \"name\": \"<stakeholder name>\",\n          \"role\": \"<role description>\",\n          \"needs\": \"<specific needs>\"\n        }\n      ],\n      \"secondary\": [\n        {\n          \"name\": \"<stakeholder name>\",\n          \"role\": \"<role description>\",\n          \"needs\": \"<specific needs>\"\n        }\n      ]\n    },\n    \"successFactors\": {\n      \"critical\": [\n        \"<critical success factor 1>\",\n        \"<critical success factor 2>\"\n      ],\n      \"important\": [\n        \"<important factor 1>\",\n        \"<important factor 2>\"\n      ]\n    },\n    \"riskAssessment\": {\n      \"high\": [\n        {\n          \"risk\": \"<risk description>\",\n          \"impact\": \"<impact description>\",\n          \"mitigation\": \"<mitigation strategy>\"\n        }\n      ],\n      \"medium\": [\n        {\n          \"risk\": \"<risk description>\",\n          \"impact\": \"<impact description>\",\n          \"mitigation\": \"<mitigation strategy>\"\n        }\n      ],\n      \"low\": [\n        {\n          \"risk\": \"<risk description>\",\n          \"impact\": \"<impact description>\",\n          \"mitigation\": \"<mitigation strategy>\"\n        }\n      ]\n    },\n    \"qualityRequirements\": {\n      \"performance\": \"<performance requirements>\",\n      \"usability\": \"<usability requirements>\",\n      \"security\": \"<security requirements>\",\n      \"compatibility\": \"<compatibility requirements>\",\n      \"scalability\": \"<scalability requirements>\"\n    },\n    \"clarificationsRequired\": {\n      \"pending\": [\n        \"<clarification item 1>\",\n        \"<clarification item 2>\"\n      ],\n      \"resolved\": []\n    },\n    \"nextSteps\": [\n      \"<immediate next step 1>\",\n      \"<immediate next step 2>\",\n      \"<immediate next step 3>\"\n    ]\n  }\n}\n```\n\n## Processing Guidelines\n\n### Executive Summary\n- Create a concise overview (50-100 words)\n- Focus on business value and impact\n- Include 3-5 key benefits\n\n### Business Objectives\n- Extract primary objective from main requirements\n- Identify 2-4 secondary objectives\n- Define measurable success metrics with specific targets\n\n### Scope Analysis\n- **Included**: Extract functional requirements from input\n- **Excluded**: Infer logical exclusions based on scope\n- **Assumptions**: Identify underlying assumptions in requirements\n\n### Stakeholder Identification\n- **Primary**: Direct users and beneficiaries\n- **Secondary**: Supporting roles and service providers\n- Include specific needs for each stakeholder\n\n### Success Factors\n- **Critical**: Must-have factors for project success\n- **Important**: Factors that enhance success but aren't mandatory\n\n### Risk Assessment\n- Categorize risks by likelihood and impact\n- Provide specific mitigation strategies\n- Consider technical, business, and operational risks\n\n### Quality Requirements\n- Extract non-functional requirements\n- Include performance, security, usability standards\n- Specify measurable criteria where possible\n\n### Clarifications\n- If `needsClarification` is true, populate pending array\n- If false, leave pending array empty\n- Match clarificationCount with actual items\n\n### Next Steps\n- Provide 3-5 immediate actionable steps\n- Focus on project initiation activities\n- Include stakeholder engagement activities\n\n## Quality Checks\n- Ensure all arrays have at least 1 item unless explicitly empty\n- Validate that success metrics are measurable\n- Confirm risk mitigation strategies are actionable\n- Verify stakeholder needs are specific and clear\n\n## Example Usage\nInput: {{ $json.requirements }}\nGenerate the complete BRD JSON following the exact schema above.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "85565758-651d-43f4-8e85-850eba1b91fe",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        224
+      ],
+      "id": "a99349f4-98da-4b70-997a-ff3ae6af9092",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qrlro3KoOImbSpFG",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"documentInfo\": {\n    \"projectId\": \"PRJ-0001\",\n    \"documentType\": \"Business Requirements Document\",\n    \"version\": \"1.0\",\n    \"generatedAt\": \"2024-06-06T00:00:00.000Z\",\n    \"generatedBy\": \"AI_BRD_Generator\",\n    \"status\": \"draft\",\n    \"confidenceScore\": 0.9,\n    \"needsClarification\": false,\n    \"clarificationCount\": 0\n  },\n  \"executiveSummary\": {\n    \"projectOverview\": \"Development of a new customer relationship management system to streamline sales and improve customer service.\",\n    \"purpose\": \"To define the business requirements for the CRM system that meets organizational goals.\",\n    \"scope\": \"Includes design and implementation of CRM features, integration with existing systems, and user training.\",\n    \"keyHighlights\": [\n      \"Centralized customer data management\",\n      \"Automated sales workflows\",\n      \"Real-time reporting and analytics\",\n      \"Mobile access support\"\n    ]\n  },\n  \"businessObjectives\": {\n    \"primary\": [\n      \"Enhance customer interaction tracking\",\n      \"Increase sales team productivity\",\n      \"Improve customer satisfaction scores\"\n    ],\n    \"secondary\": [\n      \"Reduce manual data entry\",\n      \"Enable marketing campaign management\"\n    ],\n    \"strategicAlignment\": \"Aligns with company goals to increase market share and improve operational efficiency through technology.\"\n  },\n  \"scope\": {\n    \"included\": {\n      \"functionalRequirements\": [\n        {\n          \"id\": \"FR-001\",\n          \"description\": \"Capture and store customer contact details\",\n          \"priority\": \"high\",\n          \"category\": \"Data Management\"\n        },\n        {\n          \"id\": \"FR-002\",\n          \"description\": \"Provide sales pipeline visualization\",\n          \"priority\": \"high\",\n          \"category\": \"Sales Management\"\n        },\n        {\n          \"id\": \"FR-003\",\n          \"description\": \"Enable task assignment and reminders\",\n          \"priority\": \"medium\",\n          \"category\": \"Workflow\"\n        }\n      ],\n      \"nonFunctionalRequirements\": [\n        {\n          \"id\": \"NFR-001\",\n          \"description\": \"System shall respond to user queries within 2 seconds\",\n          \"type\": \"performance\",\n          \"priority\": \"high\"\n        },\n        {\n          \"id\": \"NFR-002\",\n          \"description\": \"Ensure data encryption in transit and at rest\",\n          \"type\": \"security\",\n          \"priority\": \"high\"\n        },\n        {\n          \"id\": \"NFR-003\",\n          \"description\": \"User interface must be accessible on mobile devices\",\n          \"type\": \"usability\",\n          \"priority\": \"medium\"\n        }\n      ]\n    },\n    \"excluded\": [\n      \"Integration with third-party social media platforms\",\n      \"Custom hardware development\"\n    ],\n    \"assumptions\": [\n      \"Current network infrastructure supports additional CRM load\",\n      \"Sales team availability for training sessions\"\n    ],\n    \"constraints\": [\n      {\n        \"description\": \"Project budget limited to $500,000\",\n        \"type\": \"financial\",\n        \"impact\": \"high\"\n      },\n      {\n        \"description\": \"Timeline of 6 months for deployment\",\n        \"type\": \"time\",\n        \"impact\": \"high\"\n      }\n    ]\n  },\n  \"stakeholders\": [\n    {\n      \"role\": \"Project Sponsor\",\n      \"name\": \"Jane Smith\",\n      \"responsibilities\": \"Approve project budget and scope\",\n      \"influence\": \"high\",\n      \"contactInfo\": \"jane.smith@company.com\"\n    },\n    {\n      \"role\": \"Product Owner\",\n      \"name\": \"John Doe\",\n      \"responsibilities\": \"Define requirements and prioritize backlog\",\n      \"influence\": \"high\",\n      \"contactInfo\": \"john.doe@company.com\"\n    },\n    {\n      \"role\": \"Development Team Lead\",\n      \"name\": \"Emily Clark\",\n      \"responsibilities\": \"Lead software development and ensure quality\",\n      \"influence\": \"medium\",\n      \"contactInfo\": \"emily.clark@company.com\"\n    }\n  ],\n  \"successFactors\": {\n    \"criteria\": [\n      \"User adoption rate above 80% within first 3 months\",\n      \"System uptime of 99.9%\",\n      \"Reduction in sales data entry errors by 50%\"\n    ],\n    \"keyPerformanceIndicators\": [\n      \"Number of active users\",\n      \"Customer service call resolution times\",\n      \"Sales conversion rates\"\n    ],\n    \"acceptanceCriteria\": [\n      \"System passes all functional test cases\",\n      \"Compliance with company security standards\",\n      \"Positive feedback from pilot users\"\n    ]\n  },\n  \"riskAssessment\": {\n    \"overallRisk\": \"medium\",\n    \"identifiedRisks\": [\n      {\n        \"risk\": \"Delays in development\",\n        \"description\": \"Potential schedule slippage due to resource availability\",\n        \"probability\": \"medium\",\n        \"impact\": \"high\",\n        \"mitigation\": \"Implement agile sprints and monitor progress closely\"\n      },\n      {\n        \"risk\": \"Data migration issues\",\n        \"description\": \"Loss or corruption of existing customer data during migration\",\n        \"probability\": \"low\",\n        \"impact\": \"high\",\n        \"mitigation\": \"Perform multiple backup and validation steps\"\n      }\n    ]\n  },\n  \"qualityRequirements\": {\n    \"performance\": [\n      \"System response time under 2 seconds\",\n      \"Support up to 1000 concurrent users\"\n    ],\n    \"security\": [\n      \"Data encryption at rest and in transit\",\n      \"Role-based access control\"\n    ],\n    \"usability\": [\n      \"Mobile-friendly UI\",\n      \"Intuitive navigation\"\n    ],\n    \"reliability\": [\n      \"99.9% uptime SLA\",\n      \"Automated backup every 24 hours\"\n    ],\n    \"scalability\": [\n      \"Capacity to scale to 10,000 users within 2 years\",\n      \"Modular architecture to support new features\"\n    ]\n  },\n  \"clarificationsRequired\": {\n    \"count\": 0,\n    \"highPriorityItems\": [],\n    \"mediumPriorityItems\": [],\n    \"lowPriorityItems\": [],\n    \"allItems\": []\n  },\n  \"nextSteps\": {\n    \"immediate\": [\n      \"Schedule requirement review meeting with stakeholders\",\n      \"Finalize project timeline and resource allocation\"\n    ],\n    \"followUp\": [\n      \"Conduct feasibility study for data migration\",\n      \"Develop prototype for primary features\"\n    ]\n  },\n  \"extractionMetadata\": {\n    \"totalFunctionalReq\": 3,\n    \"totalNonFunctionalReq\": 3,\n    \"totalConstraints\": 2,\n    \"totalSuccessCriteria\": 3,\n    \"extractedBy\": \"AI_BRD_Generator\",\n    \"processedAt\": \"2024-06-06T00:00:00.000Z\"\n  }\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        576,
+        208
+      ],
+      "id": "69b5c415-7a87-4cbe-8e55-7fc1c0fe638f",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        528,
+        304
+      ],
+      "id": "d430d99e-9f8a-4c9e-9291-2c74b740e9dd",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        208
+      ],
+      "id": "e8dd9a9e-51af-41fc-aa44-c7c1f2acfac2",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "cNwt4NCdWzjzPW69",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "BRD Generation Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate & Structure Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Structure Input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send BRD to Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "adcb3ad8-3ff8-474d-8948-0bc3ffeab3e0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "022048e743bea81b2f94030a047be574c15ac4e68ae2bbe1b9d907b8bfbbccb7"
+  },
+  "id": "OFJApYbdxDaypLcj",
+  "tags": [
+    {
+      "createdAt": "2025-09-03T17:51:49.594Z",
+      "updatedAt": "2025-09-03T17:51:49.594Z",
+      "id": "Ik9deAwWxFRskIRS",
+      "name": "BRD Generation"
+    },
+    {
+      "createdAt": "2025-09-03T17:51:49.361Z",
+      "updatedAt": "2025-09-03T17:51:49.361Z",
+      "id": "itG62ofk05FjLh1w",
+      "name": "Enhanced BRD Generation"
+    }
+  ]
+}

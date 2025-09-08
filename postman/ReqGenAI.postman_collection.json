@@ -1,0 +1,498 @@
+{
+	"info": {
+		"_postman_id": "reqgenai-api-collection",
+		"name": "ReqGenAI API",
+		"description": "Complete API collection for ReqGenAI backend testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Inputs",
+			"item": [
+				{
+					"name": "Create Manual Input",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"I need a real estate website where users can search, buy, and sell properties. The platform should support property listings, user authentication, and payment processing.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/inputs/manual",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inputs",
+								"manual"
+							]
+						},
+						"description": "Create a manual input with project requirements"
+					}
+				},
+				{
+					"name": "Create Transcript Input",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"During our meeting, we discussed building a comprehensive real estate platform. Key requirements include property search functionality, user registration, and secure payment processing.\",\n  \"source\": \"meeting-transcript-2025-01-04\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/inputs/transcript",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inputs",
+								"transcript"
+							]
+						},
+						"description": "Create a transcript input from meeting notes"
+					}
+				},
+				{
+					"name": "Create File Input",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"filename\": \"requirements-document.txt\",\n  \"text\": \"This document outlines the requirements for a real estate platform. The system should allow users to browse properties, create accounts, and process transactions securely.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/inputs/file",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inputs",
+								"file"
+							]
+						},
+						"description": "Create a file-based input with extracted text content"
+					}
+				}
+			],
+			"description": "Input processing endpoints for manual, transcript, and file inputs"
+		},
+		{
+			"name": "Actions",
+			"item": [
+				{
+					"name": "Extract Requirements",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"metadata\": {\n    \"priority\": \"high\",\n    \"source\": \"manual\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/actions/extract/{{projectId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actions",
+								"extract",
+								"{{projectId}}"
+							]
+						},
+						"description": "Trigger requirements extraction for a project"
+					}
+				},
+				{
+					"name": "Generate BRD",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"metadata\": {\n    \"version\": 1,\n    \"template\": \"standard\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/actions/brd/{{projectId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actions",
+								"brd",
+								"{{projectId}}"
+							]
+						},
+						"description": "Trigger BRD generation for a project"
+					}
+				},
+				{
+					"name": "Generate Blueprint",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"metadata\": {\n    \"version\": 1,\n    \"includeArchitecture\": true\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/actions/blueprint/{{projectId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actions",
+								"blueprint",
+								"{{projectId}}"
+							]
+						},
+						"description": "Trigger blueprint generation for a project"
+					}
+				}
+			],
+			"description": "Action endpoints to trigger AI processing workflows"
+		},
+		{
+			"name": "Webhooks",
+			"item": [
+				{
+					"name": "Requirements Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"requirements\": {\n    \"functionalRequirements\": [\n      {\n        \"id\": \"FR-001\",\n        \"description\": \"System must allow users to search properties by location, price, and property type\",\n        \"priority\": \"high\",\n        \"category\": \"search\"\n      },\n      {\n        \"id\": \"FR-002\",\n        \"description\": \"Users must be able to register, log in, and manage their profiles\",\n        \"priority\": \"high\",\n        \"category\": \"user-management\"\n      }\n    ],\n    \"nonFunctionalRequirements\": [\n      {\n        \"id\": \"NFR-001\",\n        \"description\": \"The system should handle at least 10,000 concurrent users\",\n        \"type\": \"performance\"\n      },\n      {\n        \"id\": \"NFR-002\",\n        \"description\": \"The website must comply with GDPR standards\",\n        \"type\": \"compliance\"\n      }\n    ],\n    \"constraints\": [\n      {\n        \"description\": \"Project must be delivered within 6 months\",\n        \"type\": \"timeline\"\n      },\n      {\n        \"description\": \"Budget is limited to $200,000\",\n        \"type\": \"budget\"\n      }\n    ],\n    \"successCriteria\": [\n      \"80% of users can find a property within 3 clicks\",\n      \"System uptime of 99.9% over a 1-year period\"\n    ],\n    \"ambiguities\": [\n      {\n        \"area\": \"Payment Methods\",\n        \"question\": \"Should the platform support UPI, PayPal, and credit cards?\",\n        \"impact\": \"high\"\n      }\n    ]\n  },\n  \"sourceHash\": \"req-hash-123\",\n  \"timestamp\": \"2025-01-04T12:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/webhooks/requirements",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"webhooks",
+								"requirements"
+							]
+						},
+						"description": "Simulate n8n webhook callback for requirements extraction"
+					}
+				},
+				{
+					"name": "BRD Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"brd\": {\n    \"executiveSummary\": {\n      \"overview\": \"Development of a comprehensive real estate platform to streamline property transactions\",\n      \"businessValue\": \"Increase market reach and improve user experience in property transactions\",\n      \"keyBenefits\": [\n        \"Centralized property listings\",\n        \"Streamlined transaction process\",\n        \"Enhanced user experience\",\n        \"Real-time property updates\"\n      ]\n    },\n    \"businessObjectives\": {\n      \"primary\": \"Create a user-friendly real estate platform that simplifies property buying and selling\",\n      \"secondary\": [\n        \"Reduce transaction time by 50%\",\n        \"Increase market reach by 200%\",\n        \"Improve customer satisfaction scores\"\n      ],\n      \"successMetrics\": [\n        \"80% user satisfaction rating\",\n        \"50% reduction in transaction time\",\n        \"200% increase in property listings\"\n      ]\n    },\n    \"scope\": {\n      \"included\": [\n        \"Property search and filtering\",\n        \"User registration and authentication\",\n        \"Property listing management\",\n        \"Payment processing integration\"\n      ],\n      \"excluded\": [\n        \"Property valuation services\",\n        \"Legal document processing\",\n        \"Third-party insurance integration\"\n      ],\n      \"assumptions\": [\n        \"Users have basic internet connectivity\",\n        \"Property data is available from reliable sources\",\n        \"Payment gateway integration is feasible\"\n      ]\n    }\n  },\n  \"version\": 1,\n  \"sourceHash\": \"brd-hash-123\",\n  \"timestamp\": \"2025-01-04T12:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/webhooks/brd",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"webhooks",
+								"brd"
+							]
+						},
+						"description": "Simulate n8n webhook callback for BRD generation"
+					}
+				},
+				{
+					"name": "Blueprint Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"blueprint\": {\n    \"projectOverview\": {\n      \"title\": \"Real Estate Platform\",\n      \"description\": \"A comprehensive web-based platform for property transactions\",\n      \"goals\": [\n        \"User-friendly property search interface\",\n        \"Efficient transaction processing\",\n        \"Secure payment handling\",\n        \"Mobile-responsive design\"\n      ],\n      \"targetAudience\": {\n        \"primary\": \"Property buyers and sellers\",\n        \"secondary\": \"Real estate agents and brokers\",\n        \"tertiary\": \"Property management companies\"\n      },\n      \"successMetrics\": [\n        \"80% user satisfaction\",\n        \"99.9% system uptime\",\n        \"<3 second page load times\"\n      ]\n    },\n    \"technicalArchitecture\": {\n      \"frontend\": {\n        \"framework\": \"React.js\",\n        \"styling\": \"Tailwind CSS\",\n        \"stateManagement\": \"Redux Toolkit\",\n        \"routing\": \"React Router\",\n        \"buildTool\": \"Vite\"\n      },\n      \"backend\": {\n        \"runtime\": \"Node.js\",\n        \"framework\": \"NestJS\",\n        \"language\": \"TypeScript\",\n        \"authentication\": \"JWT + Passport\",\n        \"validation\": \"class-validator\"\n      },\n      \"database\": {\n        \"primary\": \"PostgreSQL\",\n        \"orm\": \"TypeORM\",\n        \"caching\": \"Redis\",\n        \"search\": \"Elasticsearch\"\n      },\n      \"infrastructure\": {\n        \"hosting\": \"AWS\",\n        \"cdn\": \"CloudFront\",\n        \"fileStorage\": \"S3\",\n        \"monitoring\": \"CloudWatch\",\n        \"logging\": \"Winston\"\n      }\n    },\n    \"timeline\": {\n      \"phases\": [\n        {\n          \"phase\": \"Foundation\",\n          \"duration\": \"4 weeks\",\n          \"deliverables\": [\n            \"Project setup\",\n            \"Database design\",\n            \"Authentication system\"\n          ],\n          \"milestones\": [\n            \"Week 2: Database schema complete\",\n            \"Week 4: Auth system deployed\"\n          ]\n        },\n        {\n          \"phase\": \"Core Features\",\n          \"duration\": \"8 weeks\",\n          \"deliverables\": [\n            \"Property search\",\n            \"User management\",\n            \"Property listings\"\n          ],\n          \"milestones\": [\n            \"Week 8: Search functionality complete\",\n            \"Week 12: Core features deployed\"\n          ]\n        }\n      ],\n      \"totalDuration\": \"16 weeks\",\n      \"keyDates\": [\n        \"Week 4: Foundation complete\",\n        \"Week 12: Core features complete\",\n        \"Week 16: Full deployment\"\n      ]\n    }\n  },\n  \"version\": 1,\n  \"timestamp\": \"2025-01-04T12:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/webhooks/blueprint",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"webhooks",
+								"blueprint"
+							]
+						},
+						"description": "Simulate n8n webhook callback for blueprint generation"
+					}
+				},
+				{
+					"name": "Draft Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"draft\": {\n    \"subject\": \"Project Proposal: Real Estate Platform Development\",\n    \"body\": \"Dear Client,\\n\\nThank you for your interest in developing a comprehensive real estate platform. Based on your requirements, I'm pleased to present our detailed proposal.\\n\\n**Project Overview:**\\nWe propose to build a modern, scalable real estate platform that will streamline property transactions and enhance user experience.\\n\\n**Key Features:**\\n- Advanced property search with filters\\n- User authentication and profile management\\n- Secure payment processing\\n- Mobile-responsive design\\n- Real-time property updates\\n\\n**Timeline:**\\nThe project will be delivered in 16 weeks with the following milestones:\\n- Week 4: Foundation and authentication\\n- Week 12: Core features implementation\\n- Week 16: Full deployment and testing\\n\\n**Investment:**\\nTotal project cost: $180,000\\n\\nWe look forward to discussing this proposal with you and answering any questions you may have.\\n\\nBest regards,\\nDevelopment Team\"\n  },\n  \"timestamp\": \"2025-01-04T12:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/webhooks/draft",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"webhooks",
+								"draft"
+							]
+						},
+						"description": "Simulate n8n webhook callback for draft email generation"
+					}
+				}
+			],
+			"description": "Webhook endpoints to simulate n8n callbacks"
+		},
+		{
+			"name": "Cache",
+			"item": [
+				{
+					"name": "Check Cache",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cache/check?hash=testhash123",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cache",
+								"check"
+							],
+							"query": [
+								{
+									"key": "hash",
+									"value": "testhash123"
+								}
+							]
+						},
+						"description": "Check cache for a specific hash value"
+					}
+				}
+			],
+			"description": "Cache management endpoints"
+		},
+		{
+			"name": "Projects",
+			"item": [
+				{
+					"name": "Get Project",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{projectId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"{{projectId}}"
+							]
+						},
+						"description": "Retrieve project details by ID"
+					}
+				}
+			],
+			"description": "Project management endpoints"
+		},
+		{
+			"name": "Infrastructure",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/infra/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"infra",
+								"health"
+							]
+						},
+						"description": "Check application health status"
+					}
+				},
+				{
+					"name": "Service Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/infra/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"infra",
+								"status"
+							]
+						},
+						"description": "Get detailed service status and metrics"
+					}
+				}
+			],
+			"description": "Infrastructure monitoring endpoints"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "apiKey",
+			"value": "your-api-key-here",
+			"type": "string"
+		},
+		{
+			"key": "projectId",
+			"value": "test-project-123",
+			"type": "string"
+		}
+	]
+}

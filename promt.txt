@@ -1,0 +1,126 @@
+before creating react app
+kindly undersatnd the api and there flows
+create react app with chakra ui or material ui
+which looks best
+without type script
+
+we will follow montholic artherture
+and put at a same folder and we will deploy frontend and backend at same place 
+instead of project_id Or projectid use(req_id)
+or project
+use requirement
+in uI
+please note that.
+
+now its time to create frontend with existing backend system
+you are free 
+t0 desing anything
+make it unique
+undersatnd the role of api's
+and work on that
+i will attach the prolem statment again with you
+so you can undersatnd what you need to taht
+
+let me help you in few area
+when input is coming
+first created project or requirment
+and create the req_id or project id
+and  then call the extraction requirment api 
+
+if you understood pelase move
+
+Problem Statement 3.1: Auto-Discovery & Requirement Blueprint Agent (REQGEN AI)
+ 
+
+The Challenge
+
+Translating client conversations, emails, and documents into clear technical requirements is an art that often leads to misunderstandings, scope creep, and project delays. Traditional requirement gathering is manual, inconsistent, and prone to interpretation errors.
+
+ 
+
+User Story
+
+"As a project manager at a web development agency, I want to upload client emails and meeting notes and receive a complete project blueprint with feature specifications, suggested tech stack, user flow diagrams, and time estimates, so that I can provide accurate quotes and avoid scope creep that typically costs us 30% of project profitability."
+
+ 
+
+What You're Building
+
+An intelligent agent that converts unstructured client communication into comprehensive, structured project blueprints with technical specifications and accurate estimates.
+
+maintaion the doucment version 
+in the dashoard project view section
+
+ 
+
+Core Requirements
+
+- Input Processing: Parse emails, PDFs, meeting transcripts, voice notes
+
+- Requirement Extraction: Identify features, constraints, preferences, and success criteria
+
+- Technical Translation: Convert business needs into technical specifications
+
+- Blueprint Generation: Structured project plan with deliverables and timelines
+
+ 
+
+Key Features to Implement
+
+- Natural Language Processing: Extract requirements from conversational text
+
+- Context Understanding: Identify implicit requirements and industry standards
+
+- Technical Mapping: Suggest appropriate technologies based on requirements
+
+- Estimation Engine: Generate realistic time and cost projections
+
+- Stakeholder Clarification: Flag ambiguous requirements for follow-up
+
+ 
+
+Output Structure: Project Blueprint
+
+1. Project Overview: Goals, target audience, success metrics
+
+2. Feature Breakdown: Detailed feature list with priorities and dependencies
+
+3. Technical Architecture: Recommended tech stack with justification
+
+4. User Experience Flow: Journey maps and key interaction points
+
+5. Timeline & Milestones: Phase breakdown with deliverables
+
+6. Resource Requirements: Team composition and skill requirements
+
+7. Risk Assessment: Potential challenges and mitigation strategies
+
+ 
+
+Success Metrics
+
+- Accuracy of requirement extraction (compared to manual analysis)
+
+- Reduction in project scope changes
+
+- Time saved in requirement gathering phase
+
+- Client satisfaction with blueprint clarity
+
+- Estimation accuracy (actual vs. predicted timelines)
+
+ 
+
+Technical Considerations
+
+- Multi-format document processing (PDF, DOCX, audio transcription)
+
+- Domain-specific requirement templates
+
+- Machine learning for estimation accuracy
+
+- Integration with project management tools
+
+- Version control for requirement changes
+
+

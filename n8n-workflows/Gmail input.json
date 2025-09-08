@@ -1,0 +1,279 @@
+{
+  "name": "Gmail input",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "Label_4642003961575083717"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dab92dbf-26d8-40ad-9cd7-5ffb05abec43",
+      "name": "Gmail Trigger",
+      "notesInFlow": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "0TzX9jaItvPFag9n",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "simple": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "28818f94-3f36-4a29-90c1-e9594d7c4655",
+      "name": "Get a message",
+      "webhookId": "dee995a9-5563-489e-ab24-0e69b384a9ac",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "0TzX9jaItvPFag9n",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Prompt for AI Agent\n\nYou are an input normalization assistant.\nYour task is to analyze the given email and convert it into a standardized JSON format.\nThis normalized JSON will be sent via webhook.\n\nEmail to analyze:\n\nSubject: {{ $json.headers.subject }}\n\nBody: {{ $json.html }}\nsender -{{ $json.headers.from }}\nrecived at -{{ $json.headers.date }}\n\n\nInstructions:\n\nNormalize the email into the following JSON structure:\n\n{\n  \"source\": \"email\",\n  \"subject\": \"<short summary or subject if available>\",\n  \"content\": \"<full extracted text of the input>\",\n  \"metadata\": {\n    \"sender\": sender email \n    \"received_at\": \"timestamp\"\n  }\n}\n\n\nEnsure:\n\n\"source\" is always \"email\" for Gmail inputs.\n\n\"subject\" is taken from the Gmail subject.\n\n\"content\" is taken from the Gmail snippet/body.\n\n\"metadata.sender\" is the email sender \n\n\"metadata.received_at\" is the timestamp .\n\nReturn only the normalized JSON.\n\n✅ Example Output:\n\n{\n  \"source\": \"email\",\n  \"subject\": \"Need proposal for real estate website\",\n  \"content\": \"Hi, I want a requirement blueprint for the product. We need to build a website for real estate where customers can purchase, rent, or sell.\",\n  \"metadata\": {\n    \"sender\": \"amit@broker.com\",\n    \"received_at\" \"02-09-2025\": \n  }\n}\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "7e558982-08e7-45ef-9019-d573a4718bcc",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        416,
+        176
+      ],
+      "id": "12654aa6-ae39-48ae-be3f-ebc341e69310",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qrlro3KoOImbSpFG",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"source\": \"email\",\n  \"subject\": \"Need proposal for real estate website\",\n  \"content\": \"Hi, I want a requirement blueprint for the product. We need to build a website for real estate where customers can purchase, rent, or sell.\",\n  \"metadata\": {\n    \"sender\": \"amit@broker.com\",\n    \"received_at\": \"2025-09-02T12:00:00Z\"\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        176
+      ],
+      "id": "4fc5ff83-9ac4-45ad-ab5a-743a738dcff2",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": " https://ac27819dd5d0.ngrok-free.app/api/workflow/process-email",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"output\": {\n    \"source\": \"email\",\n    \"subject\": \"Request for Project Proposal & Requirement Blueprint\",\n    \"content\": \"Hi Newgen, I would like to request a proposal...\",\n    \"metadata\": {\n      \"sender\": \"reactaksahy57@gmail.com\",\n      \"received_at\": \"Tue, 2 Sep 2025 18:24:32 +0530\"\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "11fcf9ee-56b8-4cdb-9ceb-ab7d071d06e6",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://reactaksahy57.app.n8n.cloud/webhook/requirement-extraction",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-execution-id",
+              "value": "test-exec-123"
+            },
+            {
+              "name": "x-n8n-node-id",
+              "value": "email-processor"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"normalizedTextJson\": {{ JSON.stringify($(\"AI Agent\").item.json.output) }},\n  \"projectId\": \"{{$json[\"data\"][\"projectId\"]}}\"\n}\n",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        976,
+        0
+      ],
+      "id": "37a12f45-3975-4eda-99e8-e4e97641b018",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        272,
+        208
+      ],
+      "id": "f99ea4b2-a1c7-45c5-8b80-41910ce06258",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MNwvHTxSLidzdRf8",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "AI Agent": [
+      {
+        "json": {
+          "output": {
+            "source": "email",
+            "subject": "Request for Project Proposal & Requirement Blueprint",
+            "content": "Hi Newgen,\n\nI would like to request a proposal for a project along with a requirement blueprint.\n\nWe are planning to build a real estate website where customers can visit, explore projects, and have options to purchase, rent, or sell properties.\n\nCould you please share the detailed Project Blueprint covering the following sections:\n\n1. Project Overview – Goals, target audience, and success metrics\n2. Feature Breakdown – Detailed feature list with priorities and dependencies\n3. Technical Architecture – Recommended tech stack with justification\n4. User Experience Flow – Journey maps and key interaction points\n5. Timeline & Milestones – Phase breakdown with deliverables\n6. Resource Requirements – Team composition and skill requirements\n7. Risk Assessment – Potential challenges and mitigation strategies\n\nLooking forward to your detailed proposal.\n\nThanks & Regards,\nAmit\nBroker.com",
+            "metadata": {
+              "sender": "reactaksahy57@gmail.com",
+              "received_at": "Tue, 2 Sep 2025 18:24:32 +0530"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a message": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "674308d3-a49c-4aef-9db1-6234d38567f9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "022048e743bea81b2f94030a047be574c15ac4e68ae2bbe1b9d907b8bfbbccb7"
+  },
+  "id": "YD2sXAJDjTnE0bop",
+  "tags": []
+}

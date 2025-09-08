@@ -1,0 +1,48 @@
+{
+  "name": "reqgenai-frontend",
+  "version": "1.0.0",
+  "description": "ReqGenAI Frontend - Intelligent Requirement Generation System",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "keywords": [
+    "react",
+    "chakra-ui",
+    "requirements",
+    "ai",
+    "project-management"
+  ],
+  "author": "ReqGenAI Team",
+  "license": "MIT",
+  "dependencies": {
+    "@chakra-ui/toast": "^7.0.2",
+    "axios": "^1.11.0",
+    "html2pdf.js": "^0.12.0",
+    "markdown-it": "^14.1.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.8.2",
+    "react-scripts": "^5.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
+}

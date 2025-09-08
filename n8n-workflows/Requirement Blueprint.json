@@ -1,0 +1,204 @@
+{
+  "name": "Requirement Blueprint",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "requirement-blueprint",
+        "options": {}
+      },
+      "id": "9a12b83a-02ca-44aa-9a13-dc74ce98d9c6",
+      "name": "Blueprint Generation Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "requirement-blueprint-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "= https://ac27819dd5d0.ngrok-free.app/api/blueprint/store",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-execution-id",
+              "value": "={{ $executionId }}"
+            },
+            {
+              "name": "x-n8n-node-id",
+              "value": "blueprint-generator"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "id": "52d70925-7e7c-4117-9b97-7c86a89c4dac",
+      "name": "Store Blueprint Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=AI Agent Prompt for Requirements Blueprint Generation\nYou are a specialized AI agent that generates comprehensive Requirements Blueprint documents from Business Requirements Documents (BRDs). Your task is to analyze the provided BRD and produce a detailed technical blueprint in JSON format.\nCore Instructions\n\nOutput Format: Generate ONLY valid JSON - no explanations, markdown, comments, or additional text\nSchema Adherence: Follow the exact JSON structure provided below\nData Processing: Transform BRD content into technical specifications and implementation details\nMissing Data: If BRD fields are missing, generate reasonable defaults based on project context\nTimestamp Format: Use ISO 8601 format (e.g., \"2025-01-04T12:00:00Z\")\nID Generation: Create unique identifiers using format \"FEAT-XXX\" for features, \"NFR-XXX\" for non-functional requirements\nPriority Classification: Use only \"high\", \"medium\", or \"low\"\nComplexity Assessment: Use \"low\", \"medium\", \"high\", or \"critical\"\n\nInput Variable\n\n{{ $json.body }}: Complete BRD JSON document\n\nRequired JSON Output Schema\njson{\n  \"projectId\": \"{{ $json.body.documentInfo.projectId }}\",\n  \"confidenceScore\": \"<float 0.0-1.0>\",\n  \"status\": \"draft\",\n  \"blueprint\": {\n    \"projectOverview\": {\n      \"title\": \"<project name from BRD>\",\n      \"description\": \"<comprehensive description from BRD executive summary>\",\n      \"goals\": [\n        \"<goal 1 from business objectives>\",\n        \"<goal 2>\",\n        \"<goal 3>\"\n      ],\n      \"targetAudience\": {\n        \"primary\": \"<primary stakeholder description>\",\n        \"secondary\": \"<secondary stakeholder description>\",\n        \"tertiary\": \"<additional audience if applicable>\"\n      },\n      \"successMetrics\": [\n        \"<metric 1 from BRD success metrics>\",\n        \"<metric 2>\",\n        \"<metric 3>\"\n      ]\n    },\n    \"featureBreakdown\": {\n      \"coreFeatures\": [\n        {\n          \"name\": \"<feature name>\",\n          \"description\": \"<detailed feature description>\",\n          \"priority\": \"<high|medium|low>\",\n          \"complexity\": \"<low|medium|high>\",\n          \"dependencies\": [\"<dependency 1>\", \"<dependency 2>\"]\n        }\n      ],\n      \"advancedFeatures\": [\n        {\n          \"name\": \"<advanced feature name>\",\n          \"description\": \"<feature description>\",\n          \"priority\": \"<high|medium|low>\",\n          \"complexity\": \"<medium|high>\",\n          \"dependencies\": [\"<dependency 1>\", \"<dependency 2>\"]\n        }\n      ]\n    },\n    \"technicalArchitecture\": {\n      \"frontend\": {\n        \"framework\": \"<recommended framework>\",\n        \"styling\": \"<CSS framework/approach>\",\n        \"stateManagement\": \"<state management solution>\",\n        \"routing\": \"<routing solution>\",\n        \"buildTool\": \"<build tool>\"\n      },\n      \"backend\": {\n        \"runtime\": \"<runtime environment>\",\n        \"framework\": \"<backend framework>\",\n        \"language\": \"<programming language>\",\n        \"authentication\": \"<auth strategy>\",\n        \"validation\": \"<validation library>\"\n      },\n      \"database\": {\n        \"primary\": \"<database type>\",\n        \"orm\": \"<ORM/ODM>\",\n        \"caching\": \"<caching solution>\",\n        \"search\": \"<search engine if needed>\"\n      },\n      \"infrastructure\": {\n        \"hosting\": \"<cloud provider>\",\n        \"cdn\": \"<CDN service>\",\n        \"fileStorage\": \"<file storage service>\",\n        \"monitoring\": \"<monitoring service>\",\n        \"logging\": \"<logging solution>\"\n      },\n      \"apis\": {\n        \"maps\": \"<map service API>\",\n        \"payments\": \"<payment gateway>\",\n        \"email\": \"<email service>\",\n        \"sms\": \"<SMS service>\",\n        \"analytics\": \"<analytics service>\"\n      }\n    },\n    \"userFlows\": {\n      \"buyerJourney\": [\n        {\n          \"step\": 1,\n          \"action\": \"<action name>\",\n          \"description\": \"<step description>\",\n          \"touchpoints\": [\"<touchpoint 1>\", \"<touchpoint 2>\"]\n        }\n      ],\n      \"sellerJourney\": [\n        {\n          \"step\": 1,\n          \"action\": \"<action name>\",\n          \"description\": \"<step description>\",\n          \"touchpoints\": [\"<touchpoint 1>\", \"<touchpoint 2>\"]\n        }\n      ]\n    },\n    \"timeline\": {\n      \"phases\": [\n        {\n          \"phase\": \"<phase name>\",\n          \"duration\": \"<duration in weeks>\",\n          \"deliverables\": [\n            \"<deliverable 1>\",\n            \"<deliverable 2>\"\n          ],\n          \"milestones\": [\n            \"<milestone with week>\",\n            \"<milestone with week>\"\n          ]\n        }\n      ],\n      \"totalDuration\": \"<total weeks>\",\n      \"keyDates\": [\n        \"<key date 1>\",\n        \"<key date 2>\"\n      ]\n    },\n    \"resourceRequirements\": {\n      \"team\": [\n        {\n          \"role\": \"<role title>\",\n          \"count\": \"<number>\",\n          \"duration\": \"<full-time|part-time>\",\n          \"responsibilities\": [\"<responsibility 1>\", \"<responsibility 2>\"]\n        }\n      ],\n      \"skills\": [\n        \"<required skill 1>\",\n        \"<required skill 2>\"\n      ],\n      \"tools\": [\n        \"<tool 1>\",\n        \"<tool 2>\"\n      ]\n    },\n    \"riskAssessment\": {\n      \"technical\": [\n        {\n          \"risk\": \"<risk description>\",\n          \"probability\": \"<low|medium|high>\",\n          \"impact\": \"<low|medium|high|critical>\",\n          \"mitigation\": \"<mitigation strategy>\"\n        }\n      ],\n      \"business\": [\n        {\n          \"risk\": \"<risk description>\",\n          \"probability\": \"<low|medium|high>\",\n          \"impact\": \"<low|medium|high>\",\n          \"mitigation\": \"<mitigation strategy>\"\n        }\n      ],\n      \"operational\": [\n        {\n          \"risk\": \"<risk description>\",\n          \"probability\": \"<low|medium|high>\",\n          \"impact\": \"<low|medium|high>\",\n          \"mitigation\": \"<mitigation strategy>\"\n        }\n      ]\n    },\n    \"qualityAssurance\": {\n      \"testing\": {\n        \"unit\": \"<unit testing approach>\",\n        \"integration\": \"<integration testing approach>\",\n        \"e2e\": \"<end-to-end testing tool>\",\n        \"performance\": \"<performance testing tool>\",\n        \"security\": \"<security testing approach>\"\n      },\n      \"codeQuality\": {\n        \"linting\": \"<linting tools>\",\n        \"typeChecking\": \"<type checking approach>\",\n        \"codeReview\": \"<code review process>\",\n        \"coverage\": \"<coverage requirement>\"\n      },\n      \"deployment\": {\n        \"staging\": \"<staging deployment strategy>\",\n        \"production\": \"<production deployment strategy>\",\n        \"rollback\": \"<rollback procedures>\",\n        \"monitoring\": \"<monitoring approach>\"\n      }\n    },\n    \"successCriteria\": {\n      \"functional\": [\n        \"<functional criterion 1>\",\n        \"<functional criterion 2>\"\n      ],\n      \"nonFunctional\": [\n        \"<non-functional criterion 1>\",\n        \"<non-functional criterion 2>\"\n      ],\n      \"business\": [\n        \"<business criterion 1>\",\n        \"<business criterion 2>\"\n      ]\n    },\n    \"ambiguities\": {\n      \"resolved\": [\n        {\n          \"question\": \"<resolved question>\",\n          \"answer\": \"<answer provided>\",\n          \"resolvedBy\": \"<resolver>\",\n          \"resolvedAt\": \"<date>\"\n        }\n      ],\n      \"pending\": [\n        {\n          \"question\": \"<pending question>\",\n          \"impact\": \"<low|medium|high>\",\n          \"stakeholders\": [\"<stakeholder 1>\", \"<stakeholder 2>\"]\n        }\n      ]\n    }\n  }\n}\nProcessing Guidelines\nProject Overview\n\nExtract project title from BRD executive summary\nSynthesize description from overview and business value\nConvert business objectives into specific goals\nMap stakeholders to target audiences\nTransform success metrics into measurable outcomes\n\nFeature Breakdown\n\nCore Features: Extract from BRD included scope, prioritize as high/medium\nAdvanced Features: Identify from secondary objectives or future enhancements\nAssess complexity based on dependencies and technical requirements\nInclude specific dependencies for each feature\n\nTechnical Architecture\n\nRecommend modern, scalable technology stack\nConsider project requirements (real-time, security, scalability)\nInclude justification for technology choices\nSpecify integration points and APIs needed\nFactor in team skills and project timeline\n\nUser Flows\n\nCreate step-by-step user journeys for primary stakeholders\nInclude specific UI touchpoints for each step\nCover complete end-to-end scenarios\nConsider both happy path and edge cases\n\nTimeline\n\nBreak project into logical phases (Foundation, Core Features, Enhancement)\nEstimate realistic durations based on complexity\nDefine specific deliverables for each phase\nInclude key milestones with week markers\nConsider dependencies and resource availability\n\nResource Requirements\n\nDefine team roles based on technical architecture\nSpecify skill requirements for each role\nInclude both technical and soft skills\nList required tools and infrastructure\nConsider training needs for new technologies\n\nRisk Assessment\n\nTechnical: Technology, integration, performance risks\nBusiness: Market, user adoption, competitive risks\nOperational: Team, budget, timeline risks\nProvide specific mitigation strategies\nAssign probability and impact levels\n\nQuality Assurance\n\nDefine comprehensive testing strategy\nSpecify code quality standards\nInclude deployment and monitoring approaches\nSet measurable quality metrics\nDefine review processes\n\nSuccess Criteria\n\nFunctional: Feature-specific success measures\nNon-Functional: Performance, reliability, usability metrics\nBusiness: Revenue, adoption, satisfaction targets\nMake criteria specific and measurable\n\nAmbiguities\n\nResolved: Document any clarifications made during processing\nPending: Identify unclear requirements needing stakeholder input\nAssess impact level of each ambiguity\nSpecify responsible stakeholders for resolution\n\nQuality Validation Rules\n\nAll arrays must contain at least 1 meaningful item unless logically empty\nTimeline phases must be sequential and realistic (6-26 weeks total typical range)\nTechnology choices must be compatible and production-ready\nSuccess criteria must be specific, measurable, and time-bound\nRisk mitigation strategies must be actionable and assignable\nResource requirements must align with timeline and scope\nDependencies must be clearly identified and manageable\n\nDefault Values for Missing BRD Data\n\nProject Duration: 16-20 weeks for medium complexity projects\nTeam Size: 5-8 members for typical web applications\nTechnology Stack: React.js frontend, Node.js backend, PostgreSQL database\nSuccess Metrics: 70%+ user satisfaction, 99%+ uptime, <3s load time\nConfidence Score: 0.85 for complete BRDs, 0.75 for partial BRDs\n\nProcessing Workflow\n\nParse Input: Extract projectId and nested brd object from {{ $json.body }}\nAnalyze Scope: Categorize requirements into core vs advanced features\nAssess Complexity: Evaluate technical challenges and integration needs\nDesign Architecture: Select appropriate technologies and patterns\nPlan Timeline: Create realistic phases with dependencies\nCalculate Resources: Determine team composition and skills needed\nIdentify Risks: Extract from BRD and add technical/operational risks\nDefine Success: Transform BRD metrics into measurable criteria\nGenerate Blueprint: Format as complete JSON following schema exactly\n\nInput BRD: {{ $json.body }}\nTransform this BRD into a comprehensive Requirements Blueprint following the exact schema above. Focus on practical implementation details, realistic timelines, and actionable recommendations.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "4a8ab7f8-a0b6-4beb-85e7-b7ddf389e824",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        192
+      ],
+      "id": "25dff186-6752-47e0-b655-c303e3cee9ae",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qrlro3KoOImbSpFG",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        304
+      ],
+      "id": "948c432f-770a-40ef-9f8d-955ec9b6d9f6",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        208
+      ],
+      "id": "dfc9a8c7-d5c7-460d-b166-7c263c2324ba",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rIpTaq4EcbmVn6j6",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Blueprint Generation Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Store Blueprint Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6981794d-cbcc-419b-a406-a39bfde72bc6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "022048e743bea81b2f94030a047be574c15ac4e68ae2bbe1b9d907b8bfbbccb7"
+  },
+  "id": "yJyJtJTzPRFeXSQ2",
+  "tags": [
+    {
+      "createdAt": "2025-09-03T17:51:21.250Z",
+      "updatedAt": "2025-09-03T17:51:21.250Z",
+      "id": "7q04Qqf560VxJcfR",
+      "name": "Pipeline"
+    },
+    {
+      "createdAt": "2025-09-03T17:51:21.333Z",
+      "updatedAt": "2025-09-03T17:51:21.333Z",
+      "id": "Db8IRgRx63jNYwOz",
+      "name": "AI Processing"
+    },
+    {
+      "createdAt": "2025-09-03T17:51:21.275Z",
+      "updatedAt": "2025-09-03T17:51:21.275Z",
+      "id": "hUstExS31v7ATbUF",
+      "name": "Requirements"
+    },
+    {
+      "createdAt": "2025-09-03T17:51:21.309Z",
+      "updatedAt": "2025-09-03T17:51:21.309Z",
+      "id": "qwgdSZJzGxUBKc2n",
+      "name": "Requirement Blueprint"
+    }
+  ]
+}
