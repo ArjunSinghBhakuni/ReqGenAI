@@ -94,7 +94,7 @@ const createInput = async (
       success: true,
       project_id: projectId,
       documentId,
-      n8n_extraction_initiated: n8nResult.success,
+      n8n_extraction_initiated: false, // Will be triggered manually
       project: {
         project_id: projectId,
         name: project.name,

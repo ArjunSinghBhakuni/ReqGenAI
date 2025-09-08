@@ -27,11 +27,19 @@ const Dashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "completed":
+      case "created":
+        return "bg-gray-100 text-gray-800";
+      case "requirement-extracted":
+        return "bg-blue-100 text-blue-800";
+      case "brd":
+        return "bg-purple-100 text-purple-800";
+      case "blueprint":
+        return "bg-indigo-100 text-indigo-800";
+      case "implemented":
         return "bg-green-100 text-green-800";
       case "processing":
-        return "bg-blue-100 text-blue-800";
-      case "failed":
+        return "bg-yellow-100 text-yellow-800";
+      case "rejected":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -40,6 +48,17 @@ const Dashboard = () => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatStatus = (status) => {
+    switch (status) {
+      case "requirement-extracted":
+        return "Requirement Extracted";
+      case "implemented":
+        return "Implemented";
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
   };
 
   if (loading) {
@@ -136,9 +155,9 @@ const Dashboard = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Completed</p>
+              <p className="text-sm font-medium text-gray-600">Implemented</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {requirements.filter((r) => r.status === "completed").length}
+                {requirements.filter((r) => r.status === "implemented").length}
               </p>
             </div>
           </div>
@@ -188,9 +207,9 @@ const Dashboard = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Failed</p>
+              <p className="text-sm font-medium text-gray-600">Rejected</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {requirements.filter((r) => r.status === "failed").length}
+                {requirements.filter((r) => r.status === "rejected").length}
               </p>
             </div>
           </div>
@@ -234,9 +253,14 @@ const Dashboard = () => {
             >
               <option value="">All Status</option>
               <option value="created">Created</option>
+              <option value="requirement-extracted">
+                Requirement Extracted
+              </option>
+              <option value="brd">BRD</option>
+              <option value="blueprint">Blueprint</option>
+              <option value="implemented">Implemented</option>
               <option value="processing">Processing</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
+              <option value="rejected">Rejected</option>
             </select>
           </div>
         </div>
@@ -302,7 +326,7 @@ const Dashboard = () => {
                     requirement.status
                   )}`}
                 >
-                  {requirement.status}
+                  {formatStatus(requirement.status)}
                 </span>
               </div>
 

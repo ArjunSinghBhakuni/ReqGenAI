@@ -22,7 +22,15 @@ const projectSchema = new mongoose.Schema({
   status: {
     type: String,
     default: "created",
-    enum: ["created", "processing", "completed", "failed"],
+    enum: [
+      "created",
+      "requirement-extracted",
+      "brd",
+      "blueprint",
+      "implemented",
+      "processing",
+      "rejected",
+    ],
   },
   totalDocuments: {
     type: Number,

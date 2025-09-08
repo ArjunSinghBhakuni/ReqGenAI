@@ -12,7 +12,7 @@ const ProjectDetail = () => {
   const { project_id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { playNotificationSound } = useNotifications();
+  const { playNotificationSound, newNotification } = useNotifications();
 
   const [project, setProject] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -55,6 +55,36 @@ const ProjectDetail = () => {
       }
     }
   }, [project_id]);
+
+  // Auto-refresh project data when new notifications are received
+  useEffect(() => {
+    if (newNotification && project_id) {
+      // Check if the notification is for this project
+      const notificationProjectId =
+        newNotification.metadata?.projectId ||
+        newNotification.metadata?.project_id;
+
+      if (notificationProjectId === project_id) {
+        // Check if it's a completion notification (REQUIREMENTS, BRD, BLUEPRINT)
+        const isCompletionNotification = [
+          "REQUIREMENTS",
+          "BRD",
+          "BLUEPRINT",
+        ].includes(newNotification.metadata?.documentType);
+
+        if (isCompletionNotification) {
+          console.log(
+            "Auto-refreshing project data due to completion notification:",
+            newNotification
+          );
+          // Refresh project data after a short delay to ensure backend has processed
+          setTimeout(() => {
+            refreshProjectData();
+          }, 1000);
+        }
+      }
+    }
+  }, [newNotification, project_id]);
 
   const loadProjectDetails = async (projectId) => {
     try {
@@ -185,14 +215,33 @@ const ProjectDetail = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "completed":
+      case "created":
+        return "bg-gray-100 text-gray-800";
+      case "requirement-extracted":
+        return "bg-blue-100 text-blue-800";
+      case "brd":
+        return "bg-purple-100 text-purple-800";
+      case "blueprint":
+        return "bg-indigo-100 text-indigo-800";
+      case "implemented":
         return "bg-green-100 text-green-800";
       case "processing":
-        return "bg-blue-100 text-blue-800";
-      case "failed":
+        return "bg-yellow-100 text-yellow-800";
+      case "rejected":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const formatStatus = (status) => {
+    switch (status) {
+      case "requirement-extracted":
+        return "Requirement Extracted";
+      case "implemented":
+        return "Implemented";
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -2107,7 +2156,7 @@ const ProjectDetail = () => {
                 project.status
               )}`}
             >
-              {project.status}
+              {formatStatus(project.status)}
             </span>
             {refreshing && (
               <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-full">

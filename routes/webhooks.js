@@ -42,12 +42,28 @@ const saveDocument = async (projectId, type, content, sourceHash = null) => {
 
     await document.save();
 
-    // Update project document count
+    // Determine status based on document type
+    let newStatus = "processing"; // default
+    switch (type) {
+      case "REQUIREMENTS":
+        newStatus = "requirement-extracted";
+        break;
+      case "BRD":
+        newStatus = "brd";
+        break;
+      case "BLUEPRINT":
+        newStatus = "blueprint";
+        break;
+      default:
+        newStatus = "processing";
+    }
+
+    // Update project document count and status
     await Project.findOneAndUpdate(
       { projectId },
       {
         $inc: { totalDocuments: 1 },
-        status: "completed",
+        status: newStatus,
         updatedAt: new Date(),
       }
     );

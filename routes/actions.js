@@ -94,25 +94,22 @@ router.post("/extract/:projectId", async (req, res) => {
       n8nPayload
     );
 
-    if (n8nResult.success) {
-      res.json({
-        success: true,
-        message: "Requirement extraction initiated successfully",
-        project_id: projectId,
-        n8nResponse: n8nResult.data,
-      });
-    } else {
-      // Update project status back to created if n8n call failed
-      await Project.findOneAndUpdate(
-        { project_id: projectId },
-        { status: "created", updatedAt: new Date() }
-      );
+    // Always return success since project status is updated to processing
+    res.json({
+      success: true,
+      message: "Requirement extraction initiated successfully",
+      project_id: projectId,
+      n8nResponse: n8nResult.success ? n8nResult.data : null,
+      n8nCallSuccess: n8nResult.success,
+    });
 
-      res.status(500).json({
-        success: false,
-        error: "Failed to initiate requirement extraction",
-        details: n8nResult.error,
-      });
+    // If N8N call failed, log it but don't fail the request
+    if (!n8nResult.success) {
+      console.warn(
+        `N8N requirement extraction failed for project ${projectId}:`,
+        n8nResult.error
+      );
+      // Keep status as "processing" - user can retry manually
     }
   } catch (error) {
     console.error("Extract action error:", error);
@@ -194,25 +191,22 @@ router.post("/brd/:projectId", async (req, res) => {
       n8nPayload
     );
 
-    if (n8nResult.success) {
-      res.json({
-        success: true,
-        message: "BRD generation initiated successfully",
-        project_id: projectId,
-        n8nResponse: n8nResult.data,
-      });
-    } else {
-      // Update project status back to created if n8n call failed
-      await Project.findOneAndUpdate(
-        { project_id: projectId },
-        { status: "created", updatedAt: new Date() }
-      );
+    // Always return success since project status is updated to processing
+    res.json({
+      success: true,
+      message: "BRD generation initiated successfully",
+      project_id: projectId,
+      n8nResponse: n8nResult.success ? n8nResult.data : null,
+      n8nCallSuccess: n8nResult.success,
+    });
 
-      res.status(500).json({
-        success: false,
-        error: "Failed to initiate BRD generation",
-        details: n8nResult.error,
-      });
+    // If N8N call failed, log it but don't fail the request
+    if (!n8nResult.success) {
+      console.warn(
+        `N8N BRD generation failed for project ${projectId}:`,
+        n8nResult.error
+      );
+      // Keep status as "processing" - user can retry manually
     }
   } catch (error) {
     console.error("BRD action error:", error);
@@ -291,25 +285,22 @@ router.post("/blueprint/:projectId", async (req, res) => {
       n8nPayload
     );
 
-    if (n8nResult.success) {
-      res.json({
-        success: true,
-        message: "Blueprint generation initiated successfully",
-        project_id: projectId,
-        n8nResponse: n8nResult.data,
-      });
-    } else {
-      // Update project status back to created if n8n call failed
-      await Project.findOneAndUpdate(
-        { project_id: projectId },
-        { status: "created", updatedAt: new Date() }
-      );
+    // Always return success since project status is updated to processing
+    res.json({
+      success: true,
+      message: "Blueprint generation initiated successfully",
+      project_id: projectId,
+      n8nResponse: n8nResult.success ? n8nResult.data : null,
+      n8nCallSuccess: n8nResult.success,
+    });
 
-      res.status(500).json({
-        success: false,
-        error: "Failed to initiate Blueprint generation",
-        details: n8nResult.error,
-      });
+    // If N8N call failed, log it but don't fail the request
+    if (!n8nResult.success) {
+      console.warn(
+        `N8N Blueprint generation failed for project ${projectId}:`,
+        n8nResult.error
+      );
+      // Keep status as "processing" - user can retry manually
     }
   } catch (error) {
     console.error("Blueprint action error:", error);
@@ -389,10 +380,11 @@ router.post("/bitrix24/create-project/:projectId", async (req, res) => {
         blueprintDoc.content
       );
 
-    // Update project with Bitrix24 project information
+    // Update project with Bitrix24 project information and set status to implemented
     await Project.findOneAndUpdate(
       { project_id: projectId },
       {
+        status: "implemented",
         metadata: {
           ...project.metadata,
           bitrix24GroupId: projectResult.groupId,
@@ -850,7 +842,7 @@ router.post("/generate/:projectId/:stepType", async (req, res) => {
       // Update project status back to created if n8n call failed
       await Project.findOneAndUpdate(
         { project_id: projectId },
-        { status: "created", updatedAt: new Date() }
+        { status: "rejected", updatedAt: new Date() }
       );
 
       res.status(500).json({
