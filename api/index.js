@@ -4,19 +4,19 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const morgan = require("morgan");
-const { logApiRequest, logError } = require("./middleware/logging");
+const { logApiRequest, logError } = require("../middleware/logging");
 require("dotenv").config();
 
 // Import routes
-const inputRoutes = require("./routes/inputs");
-const actionRoutes = require("./routes/actions");
-const webhookRoutes = require("./routes/webhooks");
-const projectRoutes = require("./routes/projects");
-const infraRoutes = require("./routes/infra");
-const notificationRoutes = require("./routes/notifications");
-const requirementRoutes = require("./routes/requirements");
-const pdfRoutes = require("./routes/pdf"); // PDF generation routes
-const fileUploadRoutes = require("./routes/fileUpload"); // File upload routes
+const inputRoutes = require("../routes/inputs");
+const actionRoutes = require("../routes/actions");
+const webhookRoutes = require("../routes/webhooks");
+const projectRoutes = require("../routes/projects");
+const infraRoutes = require("../routes/infra");
+const notificationRoutes = require("../routes/notifications");
+const requirementRoutes = require("../routes/requirements");
+const pdfRoutes = require("../routes/pdf"); // PDF generation routes
+const fileUploadRoutes = require("../routes/fileUpload"); // File upload routes
 
 const app = express();
 const PORT = process.env.PORT || 8080;
