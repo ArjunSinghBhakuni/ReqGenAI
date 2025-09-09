@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
   "builds": [
     {
       "src": "app.js",
@@ -20,10 +19,5 @@
   "env": {
     "NODE_ENV": "production",
     "FRONTEND_URL": "https://reqgenai.netlify.app"
-  },
-  "functions": {
-    "app.js": {
-      "maxDuration": 30
-    }
   }
 }
