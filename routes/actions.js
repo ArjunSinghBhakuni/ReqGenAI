@@ -1070,7 +1070,7 @@ const generateHtmlFromTemplate = async (
       path.join(process.cwd(), "api", "html-template", `${stage}.html`),
       templatePath,
       path.join(__dirname, "html-template", `${stage}.html`),
-      path.join(__dirname, "..", "html-template", `${stage}.html`)
+      path.join(__dirname, "..", "html-template", `${stage}.html`),
     ];
 
     let templateFound = false;

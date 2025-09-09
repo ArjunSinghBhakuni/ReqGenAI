@@ -164,7 +164,7 @@ router.get("/download/:filename", (req, res) => {
       pdfDir = path.join(__dirname, "../public/pdfs");
     }
 
-    const filepath = path.join(pdfDir, filename);
+    const filepath = path.resolve(pdfDir, filename);
 
     // Check if file exists
     const fs = require("fs");
@@ -180,7 +180,7 @@ router.get("/download/:filename", (req, res) => {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
 
-    // Send file
+    // Send file with absolute path
     res.sendFile(filepath);
   } catch (error) {
     console.error("PDF download error:", error);
