@@ -273,11 +273,13 @@ process.on("unhandledRejection", (reason, promise) => {
   // Don't exit in serverless environment
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 ReqGenAI API Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`📚 API docs: http://localhost:${PORT}/`);
-});
+// Start server only if not in Vercel environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 ReqGenAI API Server running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`📚 API docs: http://localhost:${PORT}/`);
+  });
+}
 
 module.exports = app;
