@@ -16,9 +16,10 @@ const infraRoutes = require("./routes/infra");
 const notificationRoutes = require("./routes/notifications");
 const requirementRoutes = require("./routes/requirements");
 const pdfRoutes = require("./routes/pdf"); // PDF generation routes
+const fileUploadRoutes = require("./routes/fileUpload"); // File upload routes
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 // Add version for debugging
 const APP_VERSION = "1.0.1";
@@ -103,6 +104,7 @@ app.use("/api/infra", infraRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api", requirementRoutes);
 app.use("/api/pdf", pdfRoutes); // PDF generation routes
+app.use("/api/file-upload", fileUploadRoutes); // File upload routes
 
 // Serve static files from React build in production
 if (process.env.NODE_ENV === "production") {

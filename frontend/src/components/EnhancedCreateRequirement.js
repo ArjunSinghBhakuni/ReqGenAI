@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { requirementAPI } from "../services/api";
 import { useToast } from "../utils/toast";
+import VoiceInput from "./VoiceInput";
+import FileUpload from "./FileUpload";
 
 const EnhancedCreateRequirement = () => {
   const navigate = useNavigate();
@@ -16,8 +18,15 @@ const EnhancedCreateRequirement = () => {
     organizationName: "",
     contactPersonName: "",
     contactEmail: "",
-    content: "",
     filename: "",
+  });
+
+  // Separate content state for each input method
+  const [inputContent, setInputContent] = useState({
+    manual: "",
+    voice: "",
+    transcript: "",
+    file: "",
   });
 
   const handleInputChange = (e) => {
@@ -28,13 +37,39 @@ const EnhancedCreateRequirement = () => {
     }));
   };
 
+  const handleContentChange = (method, content) => {
+    setInputContent((prev) => ({
+      ...prev,
+      [method]: content,
+    }));
+  };
+
+  const handleFileTextExtracted = (text, filename) => {
+    setInputContent((prev) => ({
+      ...prev,
+      file: text,
+    }));
+    setFormData((prev) => ({
+      ...prev,
+      filename: filename,
+    }));
+  };
+
+  const handleFileError = (error) => {
+    toast.error({
+      title: "File Upload Error",
+      description: error,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const currentContent = inputContent[inputType];
     if (
-      !formData.content ||
-      typeof formData.content !== "string" ||
-      !formData.content.trim()
+      !currentContent ||
+      typeof currentContent !== "string" ||
+      !currentContent.trim()
     ) {
       toast.error({
         title: "Content Required",
@@ -57,20 +92,26 @@ const EnhancedCreateRequirement = () => {
       switch (inputType) {
         case "manual":
           response = await requirementAPI.createManual(
-            formData.content,
+            currentContent,
+            projectData
+          );
+          break;
+        case "voice":
+          response = await requirementAPI.createVoice(
+            currentContent,
             projectData
           );
           break;
         case "transcript":
           response = await requirementAPI.createTranscript(
-            formData.content,
+            currentContent,
             formData.filename || "transcript"
           );
           break;
         case "file":
           response = await requirementAPI.createFile(
             formData.filename,
-            formData.content
+            currentContent
           );
           break;
         default:
@@ -109,15 +150,26 @@ const EnhancedCreateRequirement = () => {
                 Project Description *
               </label>
               <textarea
-                name="content"
-                value={formData.content}
-                onChange={handleInputChange}
+                value={inputContent.manual}
+                onChange={(e) => handleContentChange("manual", e.target.value)}
                 rows={8}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Describe your project requirements, goals, and any specific details..."
                 required
               />
             </div>
+          </div>
+        );
+
+      case "voice":
+        return (
+          <div className="space-y-4">
+            <VoiceInput
+              onTranscriptChange={(transcript) => {
+                handleContentChange("voice", transcript);
+              }}
+              initialValue={inputContent.voice}
+            />
           </div>
         );
 
@@ -142,9 +194,10 @@ const EnhancedCreateRequirement = () => {
                 Transcript Content *
               </label>
               <textarea
-                name="content"
-                value={formData.content}
-                onChange={handleInputChange}
+                value={inputContent.transcript}
+                onChange={(e) =>
+                  handleContentChange("transcript", e.target.value)
+                }
                 rows={8}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Paste your transcript content here..."
@@ -157,9 +210,16 @@ const EnhancedCreateRequirement = () => {
       case "file":
         return (
           <div className="space-y-4">
+            {/* File Upload Component */}
+            <FileUpload
+              onTextExtracted={handleFileTextExtracted}
+              onError={handleFileError}
+            />
+
+            {/* Manual File Name Input (optional) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                File Name
+                File Name (Optional)
               </label>
               <input
                 type="text"
@@ -170,19 +230,24 @@ const EnhancedCreateRequirement = () => {
                 placeholder="e.g., requirements.docx, project-brief.pdf"
               />
             </div>
+
+            {/* Extracted/Manual Content */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 File Content *
               </label>
               <textarea
-                name="content"
-                value={formData.content}
-                onChange={handleInputChange}
+                value={inputContent.file}
+                onChange={(e) => handleContentChange("file", e.target.value)}
                 rows={8}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Paste the content from your file here..."
+                placeholder="Upload a file above to extract text automatically, or paste content manually here..."
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Tip: Upload a DOCX, PDF, PPT, or PPTX file to automatically
+                extract text, or paste content manually.
+              </p>
             </div>
           </div>
         );
@@ -271,13 +336,19 @@ const EnhancedCreateRequirement = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Input Method
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 {
                   value: "manual",
                   label: "Manual Input",
                   icon: "✍️",
                   description: "Type your requirements directly",
+                },
+                {
+                  value: "voice",
+                  label: "Voice Input",
+                  icon: "🎙️",
+                  description: "Speak your requirements",
                 },
                 {
                   value: "transcript",

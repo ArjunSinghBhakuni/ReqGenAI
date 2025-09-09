@@ -45,6 +45,10 @@ export const requirementAPI = {
   // Create new requirement from file
   createFile: (filename, text) => api.post("/inputs/file", { filename, text }),
 
+  // Create new requirement from voice input
+  createVoice: (content, projectData = {}) =>
+    api.post("/inputs/voice", { content, ...projectData }),
+
   // Get all requirements (projects)
   getAll: (page = 1, limit = 10, status) =>
     api.get("/projects", { params: { page, limit, status } }),
@@ -184,6 +188,24 @@ export const infraAPI = {
 
   // Get system status
   getStatus: () => api.get("/infra/status"),
+};
+
+// File upload API endpoints
+export const fileUploadAPI = {
+  // Upload file and extract text
+  uploadAndExtractText: (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return api.post("/file-upload/extract-text", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
+  // Get supported file types
+  getSupportedTypes: () => api.get("/file-upload/supported-types"),
 };
 
 export { api };

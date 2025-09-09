@@ -1,6 +1,6 @@
 {
   "name": "reqgenai-frontend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ReqGenAI Frontend - Intelligent Requirement Generation System",
   "main": "src/index.js",
   "scripts": {

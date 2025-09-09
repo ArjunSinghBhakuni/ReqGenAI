@@ -17,7 +17,7 @@ const projectSchema = new mongoose.Schema({
   source: {
     type: String,
     required: true,
-    enum: ["manual", "transcript", "file", "email", "webhook"],
+    enum: ["manual", "transcript", "file", "email", "webhook", "voice"],
   },
   status: {
     type: String,
@@ -46,7 +46,7 @@ const projectSchema = new mongoose.Schema({
   },
   inputType: {
     type: String,
-    enum: ["manual", "transcript", "file", "email", "webhook"],
+    enum: ["manual", "transcript", "file", "email", "webhook", "voice"],
     default: "manual",
   },
   // Organization and Contact Information

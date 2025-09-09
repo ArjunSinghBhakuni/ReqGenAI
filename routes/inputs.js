@@ -61,7 +61,7 @@ const createInput = async (
       project_id: projectId,
       name: projectData.name || `Requirement ${projectId.substring(0, 8)}`,
       description: content.substring(0, 100) + "...",
-      source: sourceDetail ? `${source}:${sourceDetail}` : source,
+      source: source, // Use only the source type, not concatenated with sourceDetail
       status: "created", // Start as created, will be processing when extraction starts
       totalDocuments: 1,
       input: content,
@@ -182,6 +182,37 @@ router.post("/file", async (req, res) => {
     res.status(201).json(result);
   } catch (error) {
     console.error("File input error:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
+    });
+  }
+});
+
+// POST /api/inputs/voice
+router.post("/voice", async (req, res) => {
+  try {
+    const { content, name, organizationName, contactPersonName, contactEmail } =
+      req.body;
+
+    if (!content || content.trim() === "") {
+      return res.status(400).json({
+        error: "Content is required",
+        message: "Please provide content for voice input",
+      });
+    }
+
+    const projectData = {
+      name,
+      organizationName,
+      contactPersonName,
+      contactEmail,
+    };
+
+    const result = await createInput("voice", content, null, projectData);
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("Voice input error:", error);
     res.status(500).json({
       error: "Internal server error",
       message: error.message,
