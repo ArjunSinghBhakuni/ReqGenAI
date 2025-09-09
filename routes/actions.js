@@ -938,37 +938,41 @@ router.get("/test-templates", async (req, res) => {
   try {
     const fs = require("fs").promises;
     const path = require("path");
-    
+
     const possiblePaths = [
       path.join(process.cwd(), "html-template", "brd.html"),
       path.join(process.cwd(), "api", "html-template", "brd.html"),
       path.join(__dirname, "html-template", "brd.html"),
-      path.join(__dirname, "..", "html-template", "brd.html")
+      path.join(__dirname, "..", "html-template", "brd.html"),
     ];
-    
+
     const results = [];
     for (const templatePath of possiblePaths) {
       try {
         await fs.access(templatePath);
         results.push({ path: templatePath, exists: true });
       } catch (error) {
-        results.push({ path: templatePath, exists: false, error: error.message });
+        results.push({
+          path: templatePath,
+          exists: false,
+          error: error.message,
+        });
       }
     }
-    
+
     res.json({
       success: true,
       message: "Template path test results",
       cwd: process.cwd(),
       dirname: __dirname,
       vercel: !!process.env.VERCEL,
-      results: results
+      results: results,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Template test error",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1062,10 +1066,11 @@ const generateHtmlFromTemplate = async (
 
     let template;
     const possiblePaths = [
-      templatePath,
-      path.join(process.cwd(), "html-template", `${stage}.html`),
+      path.join(process.cwd(), "html-template", `${stage}.html`), // This works in Vercel
       path.join(process.cwd(), "api", "html-template", `${stage}.html`),
+      templatePath,
       path.join(__dirname, "html-template", `${stage}.html`),
+      path.join(__dirname, "..", "html-template", `${stage}.html`)
     ];
 
     let templateFound = false;
