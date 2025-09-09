@@ -19,6 +19,19 @@ const Dashboard = () => {
     loadRequirements(1, 10, statusFilter);
   }, [statusFilter]);
 
+  // Listen for refresh events from the header
+  useEffect(() => {
+    const handleRefresh = () => {
+      loadRequirements(1, 10, statusFilter);
+    };
+
+    window.addEventListener('dashboardRefresh', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('dashboardRefresh', handleRefresh);
+    };
+  }, [loadRequirements, statusFilter]);
+
   const filteredRequirements = requirements.filter(
     (req) =>
       req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
