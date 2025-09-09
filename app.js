@@ -39,12 +39,17 @@ app.use(limiter);
 // CORS Configuration
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:3000",
-  "https://reqgenai.netlify.app",
+  "https://reqgenai.netlify.app", // Production frontend
   "http://localhost:3000", // Development
   "http://localhost:3001", // Alternative dev port
   "http://127.0.0.1:3000", // Alternative localhost
   "http://127.0.0.1:3001", // Alternative localhost
 ];
+
+console.log("CORS Configuration:");
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
+console.log("Allowed Origins:", allowedOrigins);
 
 app.use(
   cors({
@@ -70,6 +75,7 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     optionsSuccessStatus: 200, // Some legacy browsers choke on 204
+    preflightContinue: false,
   })
 );
 
