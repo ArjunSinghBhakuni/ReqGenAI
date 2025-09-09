@@ -1010,13 +1010,43 @@ const generateHtmlFromTemplate = async (
 
   try {
     // Read the appropriate template
+    // In Vercel serverless, we need to use process.cwd() instead of __dirname
+    const basePath = process.env.VERCEL ? process.cwd() : path.join(__dirname, "..");
     const templatePath = path.join(
-      __dirname,
-      "..",
+      basePath,
       "html-template",
       `${stage}.html`
     );
-    let template = await fs.readFile(templatePath, "utf8");
+    
+    console.log(`Template path: ${templatePath}`);
+    console.log(`Base path: ${basePath}`);
+    console.log(`Stage: ${stage}`);
+    
+    let template;
+    const possiblePaths = [
+      templatePath,
+      path.join(process.cwd(), "html-template", `${stage}.html`),
+      path.join(process.cwd(), "api", "html-template", `${stage}.html`),
+      path.join(__dirname, "html-template", `${stage}.html`)
+    ];
+    
+    let templateFound = false;
+    for (const templatePathToTry of possiblePaths) {
+      try {
+        console.log(`Trying template path: ${templatePathToTry}`);
+        template = await fs.readFile(templatePathToTry, "utf8");
+        console.log(`Successfully loaded template from: ${templatePathToTry}`);
+        templateFound = true;
+        break;
+      } catch (fileError) {
+        console.log(`Failed to read from: ${templatePathToTry}`);
+        continue;
+      }
+    }
+    
+    if (!templateFound) {
+      throw new Error(`Could not find template file for stage: ${stage}. Tried paths: ${possiblePaths.join(', ')}`);
+    }
 
     // Get current date
     const currentDate = new Date().toLocaleDateString("en-US", {
