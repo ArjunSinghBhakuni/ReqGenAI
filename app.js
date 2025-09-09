@@ -56,7 +56,7 @@ app.use(
     origin: function (origin, callback) {
       console.log(`CORS request from origin: ${origin}`);
       console.log(`Allowed origins: ${JSON.stringify(allowedOrigins)}`);
-      
+
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) {
         console.log("CORS: Allowing request with no origin");
@@ -80,14 +80,14 @@ app.use(
 );
 
 // Handle preflight requests
-app.options('*', cors());
+app.options("*", cors());
 
 // CORS test endpoint
-app.get('/api/cors-test', (req, res) => {
+app.get("/api/cors-test", (req, res) => {
   res.json({
-    message: 'CORS is working!',
+    message: "CORS is working!",
     origin: req.headers.origin,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
