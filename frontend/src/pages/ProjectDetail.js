@@ -574,7 +574,9 @@ const ProjectDetail = () => {
         });
 
         // Open download link
-        const downloadUrl = `${API_CONFIG.BASE_URL.replace('/api', '')}${response.data.downloadUrl}`;
+        const downloadUrl = `${API_CONFIG.BASE_URL.replace("/api", "")}${
+          response.data.downloadUrl
+        }`;
         window.open(downloadUrl, "_blank");
       } else {
         throw new Error(response.data.message || "PDF generation failed");
@@ -783,7 +785,9 @@ const ProjectDetail = () => {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          const downloadUrl = `${API_CONFIG.BASE_URL.replace('/api', '')}${result.downloadUrl}`;
+          const downloadUrl = `${API_CONFIG.BASE_URL.replace("/api", "")}${
+            result.downloadUrl
+          }`;
           window.open(downloadUrl, "_blank");
 
           toast.success({
@@ -2537,7 +2541,10 @@ const ProjectDetail = () => {
                           if (response.data.success) {
                             // Download the PDF
                             const link = document.createElement("a");
-                            link.href = `${API_CONFIG.BASE_URL.replace('/api', '')}${response.data.downloadUrl}`;
+                            link.href = `${API_CONFIG.BASE_URL.replace(
+                              "/api",
+                              ""
+                            )}${response.data.downloadUrl}`;
                             link.download = response.data.filename;
                             document.body.appendChild(link);
                             link.click();
