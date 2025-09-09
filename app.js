@@ -42,26 +42,48 @@ const allowedOrigins = [
   "https://reqgenai.netlify.app",
   "http://localhost:3000", // Development
   "http://localhost:3001", // Alternative dev port
+  "http://127.0.0.1:3000", // Alternative localhost
+  "http://127.0.0.1:3001", // Alternative localhost
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      console.log(`CORS request from origin: ${origin}`);
+      console.log(`Allowed origins: ${JSON.stringify(allowedOrigins)}`);
       
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) {
+        console.log("CORS: Allowing request with no origin");
+        return callback(null, true);
+      }
+
       if (allowedOrigins.indexOf(origin) !== -1) {
+        console.log(`CORS: Allowing origin ${origin}`);
         callback(null, true);
       } else {
         console.log(`CORS blocked origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    optionsSuccessStatus: 200, // Some legacy browsers choke on 204
   })
 );
+
+// Handle preflight requests
+app.options('*', cors());
+
+// CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.json({
+    message: 'CORS is working!',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Logging
 app.use(morgan("combined"));
