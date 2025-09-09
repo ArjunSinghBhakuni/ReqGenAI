@@ -25,10 +25,10 @@ const Dashboard = () => {
       loadRequirements(1, 10, statusFilter);
     };
 
-    window.addEventListener('dashboardRefresh', handleRefresh);
-    
+    window.addEventListener("dashboardRefresh", handleRefresh);
+
     return () => {
-      window.removeEventListener('dashboardRefresh', handleRefresh);
+      window.removeEventListener("dashboardRefresh", handleRefresh);
     };
   }, [loadRequirements, statusFilter]);
 

@@ -11,8 +11,8 @@ const Layout = ({ children }) => {
   const handleRefresh = () => {
     setIsRefreshing(true);
     // Dispatch custom event for dashboard refresh
-    window.dispatchEvent(new CustomEvent('dashboardRefresh'));
-    
+    window.dispatchEvent(new CustomEvent("dashboardRefresh"));
+
     // Reset refreshing state after a short delay
     setTimeout(() => {
       setIsRefreshing(false);
@@ -51,8 +51,8 @@ const Layout = ({ children }) => {
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                   className={`p-2 rounded-md transition-colors ${
-                    isRefreshing 
-                      ? "text-brand-500 bg-brand-50 cursor-not-allowed" 
+                    isRefreshing
+                      ? "text-brand-500 bg-brand-50 cursor-not-allowed"
                       : "text-gray-700 hover:text-brand-500 hover:bg-gray-100"
                   }`}
                   title="Refresh Dashboard"
@@ -102,8 +102,8 @@ const Layout = ({ children }) => {
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                   className={`p-2 rounded-md transition-colors ${
-                    isRefreshing 
-                      ? "text-brand-500 bg-brand-50 cursor-not-allowed" 
+                    isRefreshing
+                      ? "text-brand-500 bg-brand-50 cursor-not-allowed"
                       : "text-gray-700 hover:text-brand-500 hover:bg-gray-100"
                   }`}
                   title="Refresh Dashboard"
