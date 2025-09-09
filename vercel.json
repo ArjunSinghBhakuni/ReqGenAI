@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "reqgenai-backend",
   "builds": [
     {
       "src": "app.js",
@@ -9,10 +10,6 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/app.js"
-    },
-    {
-      "src": "/(.*)",
       "dest": "/app.js"
     }
   ],

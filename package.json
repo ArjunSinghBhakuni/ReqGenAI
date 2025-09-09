@@ -1,7 +1,7 @@
 {
-  "name": "reqgenai",
+  "name": "reqgenai-backend",
   "version": "1.1.0",
-  "description": "ReqGenAI - Express.js backend for requirements generation",
+  "description": "ReqGenAI - Express.js backend API for requirements generation",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
