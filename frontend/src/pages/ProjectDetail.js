@@ -230,8 +230,10 @@ const ProjectDetail = () => {
         return "bg-yellow-100 text-yellow-800";
       case "rejected":
         return "bg-red-100 text-red-800";
+      case "completed": // Handle completed status as processing
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-yellow-100 text-yellow-800"; // Default to processing color
     }
   };
 
@@ -239,10 +241,22 @@ const ProjectDetail = () => {
     switch (status) {
       case "requirement-extracted":
         return "Requirement Extracted";
+      case "brd":
+        return "BRD";
+      case "blueprint":
+        return "Blueprint";
       case "implemented":
         return "Implemented";
+      case "created":
+        return "Created";
+      case "processing":
+        return "Processing";
+      case "rejected":
+        return "Rejected";
+      case "completed": // Handle completed status as processing
+        return "Processing";
       default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
+        return "Processing"; // Default to Processing for unknown statuses
     }
   };
 

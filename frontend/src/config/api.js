@@ -6,7 +6,11 @@ const getBaseURL = () => {
   }
 
   // Check if we're in development with environment variable
-  if (process.env.NODE_ENV === "development" || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+  if (
+    process.env.NODE_ENV === "development" ||
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
     return "http://localhost:8080/api";
   }
 

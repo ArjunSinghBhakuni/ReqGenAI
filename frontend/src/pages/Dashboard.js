@@ -45,6 +45,7 @@ const Dashboard = () => {
       case "requirement-extracted":
       case "brd":
       case "blueprint":
+      case "completed": // Handle completed status as processing
         return "bg-yellow-100 text-yellow-800"; // All processing states
       case "implemented":
         return "bg-green-100 text-green-800";
@@ -53,7 +54,7 @@ const Dashboard = () => {
       case "rejected":
         return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-yellow-100 text-yellow-800"; // Default to processing color
     }
   };
 
@@ -78,7 +79,7 @@ const Dashboard = () => {
       case "rejected":
         return "Rejected";
       default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
+        return "Processing"; // Default to Processing for unknown statuses
     }
   };
 
@@ -236,7 +237,8 @@ const Dashboard = () => {
                       r.status === "processing" ||
                       r.status === "requirement-extracted" ||
                       r.status === "brd" ||
-                      r.status === "blueprint"
+                      r.status === "blueprint" ||
+                      r.status === "completed"
                   ).length
                 }
               </p>
