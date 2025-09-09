@@ -933,6 +933,46 @@ const formatAsDocument = (markdownContent, documentType, projectId) => {
   return formattedDocument;
 };
 
+// Test endpoint to check template paths
+router.get("/test-templates", async (req, res) => {
+  try {
+    const fs = require("fs").promises;
+    const path = require("path");
+    
+    const possiblePaths = [
+      path.join(process.cwd(), "html-template", "brd.html"),
+      path.join(process.cwd(), "api", "html-template", "brd.html"),
+      path.join(__dirname, "html-template", "brd.html"),
+      path.join(__dirname, "..", "html-template", "brd.html")
+    ];
+    
+    const results = [];
+    for (const templatePath of possiblePaths) {
+      try {
+        await fs.access(templatePath);
+        results.push({ path: templatePath, exists: true });
+      } catch (error) {
+        results.push({ path: templatePath, exists: false, error: error.message });
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: "Template path test results",
+      cwd: process.cwd(),
+      dirname: __dirname,
+      vercel: !!process.env.VERCEL,
+      results: results
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Template test error",
+      error: error.message
+    });
+  }
+});
+
 // Generate HTML view for BRD or Blueprint using local templates
 router.post("/generate-view/:projectId", async (req, res) => {
   try {
@@ -1011,25 +1051,23 @@ const generateHtmlFromTemplate = async (
   try {
     // Read the appropriate template
     // In Vercel serverless, we need to use process.cwd() instead of __dirname
-    const basePath = process.env.VERCEL ? process.cwd() : path.join(__dirname, "..");
-    const templatePath = path.join(
-      basePath,
-      "html-template",
-      `${stage}.html`
-    );
-    
+    const basePath = process.env.VERCEL
+      ? process.cwd()
+      : path.join(__dirname, "..");
+    const templatePath = path.join(basePath, "html-template", `${stage}.html`);
+
     console.log(`Template path: ${templatePath}`);
     console.log(`Base path: ${basePath}`);
     console.log(`Stage: ${stage}`);
-    
+
     let template;
     const possiblePaths = [
       templatePath,
       path.join(process.cwd(), "html-template", `${stage}.html`),
       path.join(process.cwd(), "api", "html-template", `${stage}.html`),
-      path.join(__dirname, "html-template", `${stage}.html`)
+      path.join(__dirname, "html-template", `${stage}.html`),
     ];
-    
+
     let templateFound = false;
     for (const templatePathToTry of possiblePaths) {
       try {
@@ -1043,9 +1081,13 @@ const generateHtmlFromTemplate = async (
         continue;
       }
     }
-    
+
     if (!templateFound) {
-      throw new Error(`Could not find template file for stage: ${stage}. Tried paths: ${possiblePaths.join(', ')}`);
+      throw new Error(
+        `Could not find template file for stage: ${stage}. Tried paths: ${possiblePaths.join(
+          ", "
+        )}`
+      );
     }
 
     // Get current date
