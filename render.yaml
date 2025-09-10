@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     rootDir: server
-    nodeRuntime: 18
+    nodeRuntime: 20
     buildCommand: npm install
     startCommand: npm start
     envVars:
