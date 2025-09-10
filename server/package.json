@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "build": "echo 'Backend build complete'",
+    "build": "echo \"Backend build complete\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -19,8 +19,8 @@
   "author": "",
   "license": "MIT",
   "engines": {
-    "node": "20.x",
-    "npm": "10.x"
+    "node": ">=20.0.0 <21.0.0",
+    "npm": ">=10.0.0 <11.0.0"
   },
   "dependencies": {
     "aws-sdk": "^2.1692.0",
