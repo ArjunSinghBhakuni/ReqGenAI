@@ -1,43 +1,40 @@
 {
-  "name": "reqgenai-backend",
+  "name": "reqgenai-monorepo",
   "version": "1.1.0",
-  "description": "ReqGenAI - Express.js backend API for requirements generation",
-  "main": "app.js",
+  "description": "ReqGenAI - Intelligent Requirement Generation System (Monorepo)",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "server"
+  ],
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "build": "echo 'Backend build complete'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:frontend\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "build": "npm run build:frontend && npm run build:server",
+    "build:frontend": "cd frontend && npm run build",
+    "build:server": "cd server && npm run build",
+    "start": "npm run start:server",
+    "start:server": "cd server && npm start",
+    "install:all": "npm install && cd frontend && npm install && cd ../server && npm install",
+    "clean": "rm -rf node_modules frontend/node_modules server/node_modules frontend/build",
+    "test": "echo \"Tests not configured yet\" && exit 0"
   },
   "keywords": [
-    "express",
-    "mongodb",
     "requirements",
     "ai",
-    "n8n"
+    "react",
+    "express",
+    "mongodb",
+    "monorepo"
   ],
-  "author": "",
+  "author": "ReqGenAI Team",
   "license": "MIT",
-  "dependencies": {
-    "aws-sdk": "^2.1692.0",
-    "axios": "^1.6.0",
-    "cors": "^2.8.5",
-    "docx": "^9.5.1",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0",
-    "mammoth": "^1.10.0",
-    "mongoose": "^8.0.3",
-    "morgan": "^1.10.0",
-    "multer": "^2.0.2",
-    "pdf-parse": "^1.1.1",
-    "pdfkit": "^0.17.2",
-    "pptx2json": "^0.0.10",
-    "puppeteer": "^24.19.0",
-    "uuid": "^9.0.1"
-  },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

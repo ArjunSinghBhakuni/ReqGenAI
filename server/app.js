@@ -4,19 +4,19 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const morgan = require("morgan");
-const { logApiRequest, logError } = require("../middleware/logging");
+const { logApiRequest, logError } = require("./middleware/logging");
 require("dotenv").config();
 
 // Import routes
-const inputRoutes = require("../routes/inputs");
-const actionRoutes = require("../routes/actions");
-const webhookRoutes = require("../routes/webhooks");
-const projectRoutes = require("../routes/projects");
-const infraRoutes = require("../routes/infra");
-const notificationRoutes = require("../routes/notifications");
-const requirementRoutes = require("../routes/requirements");
-const pdfRoutes = require("../routes/pdf"); // PDF generation routes
-const fileUploadRoutes = require("../routes/fileUpload"); // File upload routes
+const inputRoutes = require("./routes/inputs");
+const actionRoutes = require("./routes/actions");
+const webhookRoutes = require("./routes/webhooks");
+const projectRoutes = require("./routes/projects");
+const infraRoutes = require("./routes/infra");
+const notificationRoutes = require("./routes/notifications");
+const requirementRoutes = require("./routes/requirements");
+const pdfRoutes = require("./routes/pdf"); // PDF generation routes
+const fileUploadRoutes = require("./routes/fileUpload"); // File upload routes
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -24,6 +24,9 @@ const PORT = process.env.PORT || 8080;
 // Add version for debugging
 const APP_VERSION = "1.0.1";
 console.log(`ReqGenAI API Server v${APP_VERSION} starting...`);
+
+// Trust proxy for Vercel deployment
+app.set("trust proxy", 1);
 
 // Security middleware
 app.use(helmet());
@@ -38,12 +41,8 @@ app.use(limiter);
 
 // CORS Configuration
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:3000",
-  "https://reqgenai.netlify.app", // Production frontend
-  "http://localhost:3000", // Development
-  "http://localhost:3001", // Alternative dev port
-  "http://127.0.0.1:3000", // Alternative localhost
-  "http://127.0.0.1:3001", // Alternative localhost
+  "https://reqgenai-frontend.netlify.app",
+  "http://localhost:3000",
 ];
 
 console.log("CORS Configuration:");
@@ -53,29 +52,11 @@ console.log("Allowed Origins:", allowedOrigins);
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      console.log(`CORS request from origin: ${origin}`);
-      console.log(`Allowed origins: ${JSON.stringify(allowedOrigins)}`);
-
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) {
-        console.log("CORS: Allowing request with no origin");
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        console.log(`CORS: Allowing origin ${origin}`);
-        callback(null, true);
-      } else {
-        console.log(`CORS blocked origin: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    optionsSuccessStatus: 200, // Some legacy browsers choke on 204
-    preflightContinue: false,
+    optionsSuccessStatus: 200,
   })
 );
 
@@ -153,11 +134,7 @@ app.use("/api", requirementRoutes);
 app.use("/api/pdf", pdfRoutes); // PDF generation routes
 app.use("/api/file-upload", fileUploadRoutes); // File upload routes
 
-// Serve static files from React build in production
-if (process.env.NODE_ENV === "production") {
-  const path = require("path");
-  app.use(express.static(path.join(__dirname, "frontend/build")));
-}
+// Static files serving removed - frontend is now deployed separately
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -214,22 +191,15 @@ app.get("/", (req, res) => {
   });
 });
 
-// Serve React app for all non-API routes in production
-if (process.env.NODE_ENV === "production") {
-  app.get("*", (req, res) => {
-    const path = require("path");
-    res.sendFile(path.join(__dirname, "frontend/build", "index.html"));
+// 404 handler for all non-API routes
+app.use("*", (req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    path: req.originalUrl,
+    method: req.method,
+    message: "This is the API server. Frontend is deployed separately.",
   });
-} else {
-  // 404 handler for development
-  app.use("*", (req, res) => {
-    res.status(404).json({
-      error: "Route not found",
-      path: req.originalUrl,
-      method: req.method,
-    });
-  });
-}
+});
 
 // Error handling middleware
 app.use(logError);
